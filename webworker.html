@@ -1,0 +1,42 @@
+<html>
+<head>
+<script type="text/javascript">
+  function launchPiWebWorker() {
+    var worker = new Worker('cpuIntensive.js');
+    var worker2 = new Worker('cpuIntensive.js');
+    var worker3 = new Worker('cpuIntensive.js');
+    var worker4 = new Worker('cpuIntensive.js');
+
+    var timeTaken;
+
+    for(i = 0; i < 4; i++) {
+    	// Worker i
+		worker.onmessage = function(e) {
+        	document.getElementById("PiValue").innerHTML = e.data.PiValue;
+	    	document.getElementById("Time").innerHTML = e.data.Time;
+	    	timeTaken[i] = e.data.Time;
+    	};
+
+	    worker.onerror = function(e) {
+    		alert('Error: Line ' + e.lineno + ' in ' + e.filename + ': ' + e.message);
+    	};
+
+	    //start the worker
+    	worker.postMessage({'cmd':   'CalculatePi', 
+        	                'value': document.getElementById("loop").value
+        });
+    }
+  }
+
+</script>
+</head>
+<body>
+<label for="loop">Enter the number of cycles:</label>
+<input id="loop" type="number" value="10" />
+<input type="button" onclick="launchPiWebWorker()" value="Calculate Pi" />
+<br>
+<br>
+<div id="PiValue">PI value appears here</div>
+<div id="Time">Time appears here</div>
+</body>
+</html>
