@@ -7,8 +7,6 @@ var test_digits = 100000;
 function CalculatePi(digits)
 {
 	var Pi;
-	var start_time_ms = Date.now();
-	var curr_time_ms, diff_time_ms;
 
     var carry = 0;
 	var arr = [];
@@ -27,16 +25,14 @@ function CalculatePi(digits)
 		}
 		carry = sum % SCALE;
 	}
+	
 	Pi = carry + sum / SCALE;
-
-	curr_time_ms = Date.now();
-  	diff_time_ms = curr_time_ms - start_time_ms;
-    
-    self.postMessage({'PiValue': Pi, 'Time': diff_time_ms});
+	
+    self.postMessage({'PiValue': Pi});
 }
 
 //wait for the start 'CalculatePi' message
 //e is the event and e.data contains the JSON object
 self.onmessage = function(e) {
-  CalculatePi();
+  CalculatePi(e.data.value);
 }
