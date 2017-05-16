@@ -1,0 +1,19 @@
+{
+  "name": "core",
+  "version": "1.0.0",
+  "description": "Core bin detection",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gurupras/smartphone.exposed-core.git"
+  },
+  "author": "Rizwana Begum, Guru Prasad Srinivasa",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/gurupras/smartphone.exposed-core/issues"
+  },
+  "homepage": "https://github.com/gurupras/smartphone.exposed-core#readme"
+}
