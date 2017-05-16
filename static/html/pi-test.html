@@ -1,6 +1,5 @@
 <html>
 	<head>
-		<script type="text/javascript" src="//wurfl.io/wurfl.js"></script>
 	</head>
 
 	<body>
@@ -28,10 +27,6 @@ var timeTaken = [];
 var run_num = 0;
 var workers = []
 
-
-// This is the part where we figure out the number of workers we need to spawn.
-// The logic is simple. First, get the device name from WURFL. Then send this to the server
-// to get the number of workers to use.
 
 function addListeners(worker) {
 	worker.onmessage = function(e) {

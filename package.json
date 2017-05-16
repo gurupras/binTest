@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/gurupras/smartphone.exposed-core/issues"
   },
-  "homepage": "https://github.com/gurupras/smartphone.exposed-core#readme"
+  "homepage": "https://github.com/gurupras/smartphone.exposed-core#readme",
+  "dependencies": {
+    "fonoapi-nodejs": "^0.1.1"
+  }
 }
