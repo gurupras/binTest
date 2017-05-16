@@ -8,14 +8,14 @@ function CalculatePi(digits)
 {
 	var Pi;
 
-    var carry = 0;
+	var carry = 0;
 	var arr = [];
 	var i, j, sum;
 
 	for (i = 0; i <= digits; i++) {
 		arr[i] = ARRINIT;
 	}
-	
+
 	for (i = digits; i > 0; i-= 14) {
 		sum = 0;
 		for (j = i; j > 0; --j) {
@@ -25,14 +25,14 @@ function CalculatePi(digits)
 		}
 		carry = sum % SCALE;
 	}
-	
+
 	Pi = carry + sum / SCALE;
-	
-    self.postMessage({'PiValue': Pi});
+
+	self.postMessage({'PiValue': Pi});
 }
 
 //wait for the start 'CalculatePi' message
 //e is the event and e.data contains the JSON object
 self.onmessage = function(e) {
-  CalculatePi(e.data.value);
+	CalculatePi(e.data.value);
 }

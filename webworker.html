@@ -1,109 +1,109 @@
 <html>
-<head>
-<script type="text/javascript">
-  var numWebWorkers = 4;
-  var rampup_runs = 3;
-  var rampup_digits = 10000;
-  var test_digits = 15000;
-  var testing = false;
+	<head>
+		<script type="text/javascript">
+var numWebWorkers = 4;
+var rampup_runs = 3;
+var rampup_digits = 10000;
+var test_digits = 15000;
+var testing = false;
 
-  var done;
-  var start_time_ms;
-  var timeTaken = [];
-  var run_num = 0;
-  var workers = []
-  
-  function createPiWebWorker() {
+var done;
+var start_time_ms;
+var timeTaken = [];
+var run_num = 0;
+var workers = []
 
-    // Create number of web workers specified by numWebWorkers
-    for(i = 0; i < numWebWorkers; i++) {
-    	// Worker i
-    	workers[i] = new Worker('cpuIntensive.js');
-		
+function createPiWebWorker() {
+
+	// Create number of web workers specified by numWebWorkers
+	for(i = 0; i < numWebWorkers; i++) {
+		// Worker i
+		workers[i] = new Worker('cpuIntensive.js');
+
 		workers[i].onmessage = function(e) {
-        	document.getElementById("PiValue").innerHTML = "Pi = ".concat(e.data.PiValue);
-	    	done++;
-	    	if (done == numWebWorkers) {
-    			document.getElementById("FinishedWorkers").innerHTML = "Number of WebWorkers Launched = ".concat(done);
-	    		if (testing) {
-	    			reportData();
-	    		} else {
-		    		recordTime();
-		    	}
-	    	}
-    	};
+			document.getElementById("PiValue").innerHTML = "Pi = ".concat(e.data.PiValue);
+			done++;
+			if (done == numWebWorkers) {
+				document.getElementById("FinishedWorkers").innerHTML = "Number of WebWorkers Launched = ".concat(done);
+				if (testing) {
+					reportData();
+				} else {
+					recordTime();
+				}
+			}
+		};
 
-	    workers[i].onerror = function(e) {
-    		alert('Error: Line ' + e.lineno + ' in ' + e.filename + ': ' + e.message);
-    	};
-    }
-	
+		workers[i].onerror = function(e) {
+			alert('Error: Line ' + e.lineno + ' in ' + e.filename + ': ' + e.message);
+		};
+	}
+
 	document.getElementById("testStatus").innerHTML = "Test Status = Ramping Up";
-    launchPiWebWorkers();
-  }
+	launchPiWebWorkers();
+}
 
-  function launchPiWebWorkers() {
-    done = 0;
+function launchPiWebWorkers() {
+	done = 0;
 	start_time_ms = Date.now()
-    // Launch number of web workers specified by numWebWorkers
-    for(i = 0; i < numWebWorkers; i++) {
-	    //start the worker
-    	workers[i].postMessage({'cmd':   'CalculatePi',
-    							'value':  rampup_digits
-    	});
-   	}
-  }
+		// Launch number of web workers specified by numWebWorkers
+		for(i = 0; i < numWebWorkers; i++) {
+			//start the worker
+			workers[i].postMessage({'cmd':   'CalculatePi',
+					'value':  rampup_digits
+					});
+		}
+}
 
-  function startTest() {
-    done = 0;
+function startTest() {
+	done = 0;
 	start_time_ms = Date.now()
-	testing = true;
+		testing = true;
 	document.getElementById("testStatus").innerHTML = "Test Status = Testing";
 
-    // Launch number of web workers specified by numWebWorkers
-    for(i = 0; i < numWebWorkers; i++) {
-	    //start the worker
-    	workers[i].postMessage({'cmd':   'CalculatePi',
-    							'value':  test_digits
-    	});
-   	}
-  }
+	// Launch number of web workers specified by numWebWorkers
+	for(i = 0; i < numWebWorkers; i++) {
+		//start the worker
+		workers[i].postMessage({'cmd':   'CalculatePi',
+				'value':  test_digits
+				});
+	}
+}
 
-  function reportData() {
-  	 var curr_time_ms = Date.now();
-	 var diff_time_ms = curr_time_ms - start_time_ms;
-	 document.getElementById("Time").innerHTML = "Time Taken = ".concat(diff_time_ms);
- 	 document.getElementById("testStatus").innerHTML = "Test Status = Test Finished!";
-  }
+function reportData() {
+	var curr_time_ms = Date.now();
+	var diff_time_ms = curr_time_ms - start_time_ms;
+	document.getElementById("Time").innerHTML = "Time Taken = ".concat(diff_time_ms);
+	document.getElementById("testStatus").innerHTML = "Test Status = Test Finished!";
+}
 
-  function recordTime() {
- 	 var curr_time_ms = Date.now();
-	 var diff_time_ms = curr_time_ms - start_time_ms;
-	 timeTaken[run_num++] = diff_time_ms;
-	 document.getElementById("Time").innerHTML = "Time Taken = ".concat(diff_time_ms);
-	 if (run_num < rampup_runs) {
-	 	launchPiWebWorkers();
-	 } else {
-	 	var j, timeTakenArray = "  ";
-	 	for (j = 0; j < rampup_runs; j++) {
-	 		timeTakenArray = timeTakenArray.concat(timeTaken[j]);
-	 		timeTakenArray = timeTakenArray.concat('\n');
-	 	}
-	    document.getElementById("timeTakenSamples").innerHTML = "Time Taken Array = ".concat(timeTakenArray);
-	 	startTest();
-	 }
-  }
+function recordTime() {
+	var curr_time_ms = Date.now();
+	var diff_time_ms = curr_time_ms - start_time_ms;
+	timeTaken[run_num++] = diff_time_ms;
+	document.getElementById("Time").innerHTML = "Time Taken = ".concat(diff_time_ms);
+	if (run_num < rampup_runs) {
+		launchPiWebWorkers();
+	} else {
+		var j, timeTakenArray = "  ";
+		for (j = 0; j < rampup_runs; j++) {
+			timeTakenArray = timeTakenArray.concat(timeTaken[j]);
+			timeTakenArray = timeTakenArray.concat('\n');
+		}
+		document.getElementById("timeTakenSamples").innerHTML = "Time Taken Array = ".concat(timeTakenArray);
+		startTest();
+	}
+}
 
-</script>
-</head>
-<body>
-<input type="button" onclick="createPiWebWorker()" value="Run Test" />
-<br>
-<br>
-<div id="PiValue">PI value appears here</div>
-<div id="Time">Time appears here</div>
-<div id="FinishedWorkers">Number of Workers appears here</div>
-<div id="testStatus">Test status appears here</div>
-<div id="timeTakenSamples">Array of timeTaken for ramp up runs appears here</div>
-</body>
+		</script>
+	</head>
+	<body>
+		<input type="button" onclick="createPiWebWorker()" value="Run Test" />
+		<br>
+		<br>
+		<div id="PiValue">PI value appears here</div>
+		<div id="Time">Time appears here</div>
+		<div id="FinishedWorkers">Number of Workers appears here</div>
+		<div id="testStatus">Test status appears here</div>
+		<div id="timeTakenSamples">Array of timeTaken for ramp up runs appears here</div>
+	</body>
 </html>
