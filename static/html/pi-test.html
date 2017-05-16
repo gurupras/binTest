@@ -15,11 +15,17 @@
 		<!-- script -->
 		<script src="/static/js/piworker.js" type="text/javascript"></script>
 		<script type="text/javascript">
-var numWebWorkers = 4;
+// Defaults
+var numWebWorkers = 1;
 var rampup_runs = 3;
 var rampup_digits = 10000;
 var test_digits = 15000;
 var testing = false;
+
+var cpuConfig = localStorage.getItem('cpu-config');
+if(cpuConfig) {
+	numWebWorkers = cpuConfig.ncpus;
+}
 
 var done;
 var start_time_ms;

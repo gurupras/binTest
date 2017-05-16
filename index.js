@@ -55,20 +55,55 @@ app.get('/pi-test', function (req, res) {
 });
 
 app.get('/cpu-config', function (req, res) {
-	console.log('Attempting to query fonoapi for "' + req.query.name + '"');
+	var fullName = req.query.name;
+	console.log('Attempting to query fonoapi for "' + fullName + '"');
 	// Make the HTTP POST request
+	// FIXME: Rewrite this HUGE mess The logic we're trying to implement here is
+	// fairly simple: First, try the full name as acquired from the client.  If
+	// this fails, then discard the first word from the name (possibly the brand
+	// name) and try with the remaining. If this also fails, then bail. We don't
+	// know how to handle this name.
 	request.post(
-			'https://fonoapi.freshpixl.com/v1/getdevice',
-			{json: {token: config.fonoapi_key, limit: 5, device: req.query.name}},
-			function (error, response, body) {
-				if (!error && response.statusCode == 200) {
+		'https://fonoapi.freshpixl.com/v1/getdevice',
+		{json: {token: config.fonoapi_key, limit: 5, device: fullName}},
+		function (error, response, body) {
+			if (!error && response.statusCode == 200 && body.status !== 'error') {
+				try {
 					var cpus = resolveNumCPUs(body[0].cpu);
-					res.send(cpus);
-				} else {
-					console.log('Failed fonoapi query: ' + response);
-					res.status(500).send('fonoapi query failed!');
+					res.send({
+						'status': 'OK',
+						'result': cpus
+					});
+				} catch(e) {
+					res.sendStatus(500);
 				}
-	});
+			} else {
+				// We failed to find the device using the full name. Try ignoring the first word which could be the brand
+				var model = fullName.substr(fullName.indexOf(' ')+1);
+				request.post(
+						'https://fonoapi.freshpixl.com/v1/getdevice',
+						{json: {token: config.fonoapi_key, limit: 5, device: model}},
+						function (error, response, body) {
+							if (!error && response.statusCode == 200 && body.status !== 'error') {
+								try {
+									var cpus = resolveNumCPUs(body[0].cpu);
+									res.send({
+										'status': 'OK',
+										'result': cpus
+									});
+								} catch(e) {
+									res.sendStatus(500);
+								}
+							} else {
+								// We could not find a device
+								console.log('Could not find info on "%s" or "%s"', fullName, model);
+								res.sendStatus(500);
+							}
+						}
+				);
+			}
+		}
+	);
 });
 
 

@@ -1,4 +1,4 @@
-document.addEventListener('onDOMContentLoaded', function() {
+function updateCPUConfig() {
 	$.getScript('//wurfl.io/wurfl.js', function() {
 		console.log('Loaded wurfl');
 		// Get the device name
@@ -9,4 +9,7 @@ document.addEventListener('onDOMContentLoaded', function() {
 			localStorage.setItem('cpu-config', result);
 		});
 	});
-});
+}
+
+//document.addEventListener('onDOMContentLoaded', updateCPUConfig);
+window.onload = updateCPUConfig
