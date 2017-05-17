@@ -1,9 +1,11 @@
 <html>
 	<head>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 	</head>
 
 	<body>
-		<input type="button" onclick="launchPiWebWorkers()" value="Run Test" />
+		<input id="run-test" type="button" value="Run Test" />
 		<br>
 		<br>
 		<div id="PiValue">PI value appears here</div>
@@ -14,107 +16,7 @@
 
 		<!-- script -->
 		<script src="/static/js/piworker.js" type="text/javascript"></script>
-		<script type="text/javascript">
-// Defaults
-var numWebWorkers = 1;
-var rampup_runs = 3;
-var rampup_digits = 10000;
-var test_digits = 15000;
-var testing = false;
-
-var cpuConfig = localStorage.getItem('cpu-config');
-if(cpuConfig) {
-	numWebWorkers = cpuConfig.ncpus;
-}
-
-var done;
-var start_time_ms;
-var timeTaken = [];
-var run_num = 0;
-var workers = []
-
-
-function addListeners(worker) {
-	worker.onmessage = function(e) {
-		document.getElementById("PiValue").innerHTML = "Pi = ".concat(e.data.PiValue);
-		done++;
-		if (done == numWebWorkers) {
-			document.getElementById("FinishedWorkers").innerHTML = "Number of WebWorkers Launched = ".concat(done);
-			if (testing) {
-				reportData();
-			} else {
-				recordTime();
-			}
-		}
-	};
-
-	worker.onerror = function(e) {
-		alert('Error: Line ' + e.lineno + ' in ' + e.filename + ': ' + e.message);
-	};
-}
-function launchPiWebWorkers() {
-	for(i = 0; i < numWebWorkers; i++) {
-		worker = createPiWebWorker();
-		addListeners(worker)
-			workers[i] = worker;
-	}
-
-	document.getElementById("testStatus").innerHTML = "Test Status = Ramping Up";
-
-	done = 0;
-	start_time_ms = Date.now()
-		// Launch number of web workers specified by numWebWorkers
-		for(i = 0; i < numWebWorkers; i++) {
-			//start the worker
-			workers[i].postMessage({
-					'cmd':   'CalculatePi',
-					'value': rampup_digits,
-			});
-		}
-}
-
-function startTest() {
-	done = 0;
-	start_time_ms = Date.now()
-		testing = true;
-	document.getElementById("testStatus").innerHTML = "Test Status = Testing";
-
-	// Launch number of web workers specified by numWebWorkers
-	for(i = 0; i < numWebWorkers; i++) {
-		//start the worker
-		workers[i].postMessage({
-				'cmd':   'CalculatePi',
-				'value': test_digits,
-		});
-	}
-}
-
-function reportData() {
-	var curr_time_ms = Date.now();
-	var diff_time_ms = curr_time_ms - start_time_ms;
-	document.getElementById("Time").innerHTML = "Time Taken = ".concat(diff_time_ms);
-	document.getElementById("testStatus").innerHTML = "Test Status = Test Finished!";
-}
-
-function recordTime() {
-	var curr_time_ms = Date.now();
-	var diff_time_ms = curr_time_ms - start_time_ms;
-	timeTaken[run_num++] = diff_time_ms;
-	document.getElementById("Time").innerHTML = "Time Taken = ".concat(diff_time_ms);
-	if (run_num < rampup_runs) {
-		launchPiWebWorkers();
-	} else {
-		var j, timeTakenArray = "  ";
-		for (j = 0; j < rampup_runs; j++) {
-			timeTakenArray = timeTakenArray.concat(timeTaken[j]);
-			timeTakenArray = timeTakenArray.concat('\n');
-		}
-		document.getElementById("timeTakenSamples").innerHTML = "Time Taken Array = ".concat(timeTakenArray);
-		startTest();
-	}
-}
-
-		</script>
+		<script src="/static/js/pi-test.js" type="text/javascript"></script>
 
 	</body>
 </html>
