@@ -24,55 +24,63 @@ function PiTest(rampupRuns, rampupDigits) {
 		};
 	}
 
-	function runRampup() {
-		done = 0;
-		// Launch number of web workers specified by numWebWorkers
-		for(i = 0; i < test.numWebWorkers; i++) {
-			//start the worker
-			test.workers[i].postMessage({
-					'cmd':   'CalculatePi',
-					'value': test.rampupDigits,
-			});
-		}
-	}
-
-	function run() {
-		for(i = 0; i < test.numWebWorkers; i++) {
-			worker = createPiWebWorker();
-			worker.id = i;
-			addRampupListener(worker)
-				test.workers[i] = worker;
-		}
-
-		document.getElementById("testStatus").innerHTML = "Test Status = Ramping Up";
-
+	function setupRampupEventHandlers() {
 		$(test.workers).on('worker-done', function() {
 			done++;
 			if(done === test.numWebWorkers) {
 				rampupCount++;
 				if(rampupCount < test.rampupRuns) {
-					done = 0;
-					runRampup();
+					runTest(test.rampupDigits);
 				} else {
-					// We need to run the real workload
-					console.log('Running real workload');
 					times = [];
 					for(i = 0; i < test.numWebWorkers; i++) {
 						times.push('Worker-' + i + ': ' + workers[i].getTimes());
 					}
 					document.getElementById("Time").innerHTML = "Time Taken = " + times.join('<br>');
 					document.getElementById("testStatus").innerHTML = "Test Status = Test Finished!";
+					// Inform that rampup is complete
+					$(test).trigger('rampup-complete');
 				}
 			}
-				// Run the actual test now
-				//
 		});
+	}
 
+	function runTest(digits) {
+		done = 0;
+		// Launch number of web workers specified by numWebWorkers
+		for(i = 0; i < test.numWebWorkers; i++) {
+			//start the worker
+			test.workers[i].postMessage({
+					'cmd':   'CalculatePi',
+					'value': digits,
+			});
+		}
+	}
+
+	function run() {
+		// First, we do a rampup, figure out things about our execution environment
+		// and then do the actual test.
+
+		document.getElementById("testStatus").innerHTML = "Test Status = Ramping Up";
+
+		$(test).on('rampup-complete', function() {
+			// Setup the real test
+		});
 		var rampupCount = 0;
-		runRampup();
+		_run(addRampupListener, setupRampupEventHandlers, test.rampupDigits);
 
-		// Create a new set of workers for the real test We do this to easily get
-		// rid of any events/bindings we've set up before this point
+	}
+
+	function _run(listenerFn, eventSetupFn, digits) {
+		for(i = 0; i < test.numWebWorkers; i++) {
+			worker = createPiWebWorker();
+			worker.id = i;
+			listenerFn(worker);
+			test.workers[i] = worker;
+		}
+		eventSetupFn();
+
+		runTest(digits);
 	}
 
 	function startTest() {
