@@ -8,11 +8,19 @@
 		<input id="run-test" type="button" value="Run Test" />
 		<br>
 		<br>
-		<div id="PiValue">PI value appears here</div>
-		<div id="Time">Time appears here</div>
-		<div id="FinishedWorkers">Number of Workers appears here</div>
-		<div id="testStatus">Test status appears here</div>
-		<div id="timeTakenSamples">Array of timeTaken for ramp up runs appears here</div>
+		<div>
+			# CPUs: <span id="ncpus"></span>
+		</div>
+
+		<div id="timeDiv">
+			Times: <span id="times"></span>
+		</div>
+
+		<div id="testStatusDiv">
+			Test Status: <span id="testStatus"></span>
+		</div>
+
+		<div id="logsDiv" style="height: 30%; overflow:auto;"></div>
 
 		<!-- script -->
 		<script src="/static/js/piworker.js" type="text/javascript"></script>

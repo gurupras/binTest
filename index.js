@@ -56,6 +56,7 @@ app.get('/pi-test', function (req, res) {
 
 app.get('/cpu-config', function (req, res) {
 	var fullName = req.query.name;
+	fullName = 'Google Nexus 6';
 	console.log('Attempting to query fonoapi for "' + fullName + '"');
 	// Make the HTTP POST request
 	// FIXME: Rewrite this HUGE mess The logic we're trying to implement here is
@@ -68,11 +69,12 @@ app.get('/cpu-config', function (req, res) {
 		{json: {token: config.fonoapi_key, limit: 5, device: fullName}},
 		function (error, response, body) {
 			if (!error && response.statusCode == 200 && body.status !== 'error') {
+				console.log('Response: ' + JSON.stringify(body));
 				try {
 					var cpus = resolveNumCPUs(body[0].cpu);
 					res.send({
 						'status': 'OK',
-						'result': cpus
+						'result': cpus,
 					});
 				} catch(e) {
 					res.sendStatus(500);
@@ -85,6 +87,7 @@ app.get('/cpu-config', function (req, res) {
 						{json: {token: config.fonoapi_key, limit: 5, device: model}},
 						function (error, response, body) {
 							if (!error && response.statusCode == 200 && body.status !== 'error') {
+								console.log('Response: ' + JSON.stringify(body));
 								try {
 									var cpus = resolveNumCPUs(body[0].cpu);
 									res.send({

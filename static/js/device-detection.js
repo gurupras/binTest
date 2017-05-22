@@ -6,7 +6,7 @@ function updateCPUConfig() {
 		// Send this over to the server to get the number of cores this device uses
 		$.get('/cpu-config', {'name': deviceName}, function(result) {
 			// Store whatever the server sends back into localStorage
-			localStorage.setItem('cpu-config', result);
+			localStorage.setItem('cpu-config', JSON.stringify(result.result));
 		});
 	});
 }
