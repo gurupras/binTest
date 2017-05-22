@@ -17,6 +17,10 @@
   },
   "homepage": "https://github.com/gurupras/smartphone.exposed-core#readme",
   "dependencies": {
-    "fonoapi-nodejs": "^0.1.1"
+    "express": "^4.15.3",
+    "fonoapi-nodejs": "^0.1.1",
+    "fs": "0.0.1-security",
+    "js-yaml": "^3.8.4",
+    "request": "^2.81.0"
   }
 }
