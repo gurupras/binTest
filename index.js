@@ -54,6 +54,10 @@ app.get('/pi-test', function (req, res) {
 	res.send(fs.readFileSync(__dirname + '/static/html/pi-test.html', 'utf-8'));
 });
 
+app.get('/pi-test-auto', function (req, res) {
+	res.send(fs.readFileSync(__dirname + '/static/html/pi-test-auto.html', 'utf-8'));
+});
+
 app.get('/cpu-config', function (req, res) {
 	var fullName = req.query.name;
 	fullName = 'Google Nexus 6';
