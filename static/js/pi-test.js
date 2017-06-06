@@ -2,7 +2,7 @@
 
 function PiTest(rampupRuns, rampupDigits) {
 	this.numWebWorkers = 1;
-	this.rampupRuns = Number(rampupRuns) || 10;
+	this.rampupRuns = Number(rampupRuns) || 5;
 	this.rampupDigits = Number(rampupDigits) || 30000;
 	this.digits = this.rampupDigits;
 	this.workers = [];
@@ -13,12 +13,13 @@ function PiTest(rampupRuns, rampupDigits) {
 		var cpuConfig = JSON.parse(localStorage.getItem('cpu-config'));
 		if(cpuConfig && cpuConfig.ncpus) {
 			this.numWebWorkers = cpuConfig.ncpus;
+			$('#ncpus').text('' + cpuConfig.ncpus);
 		}
 	} catch(e) {
 		__log(e);
 	}
+	this.numWebWorkers = 16;
 	__log('# webworkers = ' + this.numWebWorkers);
-	$('#ncpus').text('' + this.numWebWorkers);
 
 	/* Rampup functions */
 	function addRampupListener(worker) {
@@ -42,17 +43,19 @@ function PiTest(rampupRuns, rampupDigits) {
 		console.log(str);
 	}
 
+	/*
 	(function() {
 		setInterval(function() {
 				// allow 1px inaccuracy by adding 1
-				console.log(logsDiv.scrollHeight - logsDiv.clientHeight,  logsDiv.scrollTop + 1);
+				//console.log(logsDiv.scrollHeight - logsDiv.clientHeight,  logsDiv.scrollTop + 1);
 				// scroll to bottom if isScrolledToBotto
 		}, 300);
 	})();
+	*/
 
 	function setupRampupEventHandlers() {
 		$(test.workers).on('worker-done', function(e, data, worker) {
-			__log('Worker-' + worker.id + ' done');
+			//__log('Worker-' + worker.id + ' done');
 			worker.timeTaken.push(data.timeTaken);
 			test.rampupResults.push(data.timeTaken);
 
@@ -66,8 +69,9 @@ function PiTest(rampupRuns, rampupDigits) {
 					for(i = 0; i < test.numWebWorkers; i++) {
 						times.push('Worker-' + i + ': ' + workers[i].getTimes());
 					}
-					$('#times').text(times.join('<br>'));
+					//$('#times').text(times.join('<br>'));
 					var med = median(test.rampupResults);
+					$('#times').text('Median: ' + med + 'ms');
 					test.rampupMedian = med;
 					// Inform that rampup is complete
 					$(test).trigger('rampup-complete');
@@ -91,12 +95,15 @@ function PiTest(rampupRuns, rampupDigits) {
 
 	function setupRealEventHandlers() {
 		var done = 0;
-		var stop = false;
+		var finishStart = null;
 		$(test.workers).on('worker-done', function(e, data, worker) {
 			done++;
 			if(done % 100 == 0) {
-				__log('Worker-' + worker.id + ' done');
+				//__log('Worker-' + worker.id + ' done');
 			}
+
+			test.realTimes.push(data.timeTaken);
+
 			// Check if data.timeTaken falls within certain bounds of the median of
 			// the data measured during rampup.
 			// If yes, then just restart the worker
@@ -105,23 +112,44 @@ function PiTest(rampupRuns, rampupDigits) {
 			var med = test.rampupMedian;
 			var diffPercent = Math.abs(((timeTaken-med) * 100) / med);
 			var threshold = test.threshold || 70;
-			if(diffPercent > threshold && !stop) {
+			if(diffPercent > threshold && !finishStart) {
 				test.realEnd = Date.now();
-				__log('Error=' + diffPercent + '%. TimeTaken=' + timeTaken + ' Median=' + med);
+				//__log('Error=' + diffPercent + '%. TimeTaken=' + timeTaken + ' Median=' + med);
 				setStatus("THROTTLED!! " + (test.realEnd - test.realStart));
-				stop = true;
+				console.log('THROTTLED!!!');
+				finishStart = Date.now();
 			} else {
 				// Just reschedule if not stopped
 				if(done % 10 == 0) {
-					__log('Threshold: ' + diffPercent);
+					//__log('Threshold: ' + diffPercent);
 				}
-				if(!stop) {
+				var now = Date.now();
+				if(!finishStart || ((now-finishStart) < 1*60*1000)) {
+					test.started++;
 					worker.postMessage({
 							'cmd':   'CalculatePi',
 							'value': data.digits,
 					});
 				}
 			}
+			if(finishStart) {
+				test.throttledResults.push({
+					'type': 'worker-done',
+					'id': worker.id,
+					'timeTaken': data.timeTaken,
+					'diffPercent': diffPercent,
+				});
+			}
+			// A worker just finished. So decrement count
+			test.started--;
+			if(finishStart && test.started == 0) {
+				// This is the end of the test
+				$(test).trigger('throttle-test-done');
+			}
+			/*
+			console.log(JSON.stringify({
+			}));
+			*/
 		});
 	}
 
@@ -134,18 +162,21 @@ function PiTest(rampupRuns, rampupDigits) {
 	}
 
 	function median(list) {
-		list.sort((a, b) => a - b);
-		let lowMiddle = Math.floor((list.length - 1) / 2);
-		let highMiddle = Math.ceil((list.length - 1) / 2);
-		let median = (list[lowMiddle] + list[highMiddle]) / 2;
+		//list.sort((a, b) => a - b);
+		list.sort();
+		var lowMiddle = Math.floor((list.length - 1) / 2);
+		var highMiddle = Math.ceil((list.length - 1) / 2);
+		var median = (list[lowMiddle] + list[highMiddle]) / 2;
 		return median;
 	}
 
 	function runTest(digits) {
 		done = 0;
+		test.started = 0;
 		// Launch number of web workers specified by numWebWorkers
 		for(i = 0; i < test.numWebWorkers; i++) {
 			//start the worker
+			test.started++;
 			test.workers[i].postMessage({
 					'cmd':   'CalculatePi',
 					'value': digits,
@@ -165,12 +196,18 @@ function PiTest(rampupRuns, rampupDigits) {
 			// Setup the real test
 			__log('Rampup complete!');
 			__log('Running throttle test');
+			test.realTimes = [];
 			test.realStart = Date.now();
+			test.throttledResults = [];
 			setStatus('Running real test');
+			$(test).on('throttle-test-done', function() {
+				setStatus('FINISHED');
+				$('#run-test').prop('disabled', false);
+			});
 			_run(addRealListener, setupRealEventHandlers, test.digits);
 		});
 
-		setStatus("Test Status = Ramping Up");
+		setStatus("Ramping Up");
 
 		test.rampupCount = 0;
 		_run(addRampupListener, setupRampupEventHandlers, test.rampupDigits);
@@ -199,6 +236,7 @@ function PiTest(rampupRuns, rampupDigits) {
 
 window.onload = function() {
 	$('#run-test').on('click', function() {
+		$('#run-test').prop('disabled', true);
 		var test = PiTest();
 		test.run();
 	});
