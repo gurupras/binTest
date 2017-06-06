@@ -3,7 +3,11 @@ var path = require('path');
 var request = require('request');
 var express = require('express')
 var app = express();
+var http = require('http').createServer(app);
 var yaml = require('js-yaml');
+
+var HTTPS_PORT = 8112;
+var HTTP_PORT = HTTPS_PORT+100;
 
 var config
 try {
@@ -13,6 +17,14 @@ try {
 	process.exit(-1);
 }
 
+var httpsConfig;
+if(config.https) {
+	httpsConfig = {
+		key: fs.readFileSync(config.https.key),
+		cert: fs.readFileSync(config.https.cert),
+	}
+	var https = require('https').createServer(httpsConfig, app);
+}
 
 
 function resolveNumCPUs(string) {
@@ -114,7 +126,12 @@ app.get('/cpu-config', function (req, res) {
 });
 
 
-app.listen(3000, function () {
-	console.log('Example app listening on port 3000!')
+http.listen(HTTP_PORT, function () {
+	console.log('smartphones.exposed core-app listening for HTTP on port %d', HTTP_PORT);
 });
 
+if(https) {
+	https.listen(HTTPS_PORT, function() {
+		console.log('smartphones.exposed core-app listening for HTTPS on port %d', HTTPS_PORT);
+	});
+}
