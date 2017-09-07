@@ -6,3 +6,5 @@ dist
 
 # Make sure you ignore config.yaml so keys don't get into the repository
 /config.yaml
+*.vim
+/logs

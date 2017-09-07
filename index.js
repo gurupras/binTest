@@ -1,15 +1,20 @@
 var fs = require('fs');
 var path = require('path');
 var request = require('request');
-var express = require('express')
+var express = require('express');
+var bodyparser = require('body-parser');
+var moment = require('moment');
+
 var app = express();
+app.use(bodyparser.text({limit: '200mb'}));
+
 var http = require('http').createServer(app);
 var yaml = require('js-yaml');
 
 var HTTPS_PORT = 8112;
 var HTTP_PORT = HTTPS_PORT+100;
 
-var config
+var config;
 try {
 	config = yaml.safeLoad(fs.readFileSync('config.yaml', 'utf8'));
 } catch (e) {
@@ -22,7 +27,7 @@ if(config.https) {
 	httpsConfig = {
 		key: fs.readFileSync(config.https.key),
 		cert: fs.readFileSync(config.https.cert),
-	}
+	};
 	var https = require('https').createServer(httpsConfig, app);
 }
 
@@ -56,7 +61,18 @@ function resolveNumCPUs(string) {
 }
 
 
-app.use('/static', express.static(path.join(__dirname, 'static')))
+app.use('/static', express.static(path.join(__dirname, 'static')));
+
+app.use(function(req, res, next) {
+	var data = '';
+	req.on('data', function(chunk) {
+		data += chunk;
+	});
+	req.on('end', function() {
+		req.rawBody = data;
+		next();
+	});
+});
 
 app.get('/', function (req, res) {
 	res.send(fs.readFileSync(__dirname + '/static/html/index.html', 'utf-8'));
@@ -68,6 +84,53 @@ app.get('/pi-test', function (req, res) {
 
 app.get('/pi-test-auto', function (req, res) {
 	res.send(fs.readFileSync(__dirname + '/static/html/pi-test-auto.html', 'utf-8'));
+});
+
+app.get('/sweep-cooldown', function (req, res) {
+	res.send(fs.readFileSync(__dirname + '/static/html/sweep-cooldown.html', 'utf-8'));
+});
+
+
+var rawData = [];
+
+function nowDateStr() {
+	var now = moment().local();
+	var dateStr = now.format('YYYY-MM-DD HH:mm:ss');
+	return dateStr;
+}
+app.post('/upload', function(req, res) {
+	var id = req.get('device-id');
+	var exptId = req.get('expt-id');
+	function pad(num, size){ return ('000000000' + num).substr(-size); }
+
+	if(!id) {
+		console.log(JSON.stringify(req.headers, null, '  '));
+	}
+	console.log('Receiving upload: %s ...', id);
+	/*
+	var dateString = new Date().toISOString().
+	  replace(/T/, ' ').      // replace T with a space
+	  replace(/\..+/, '');     // delete the dot and everything after
+	*/
+	var dateString = nowDateStr();
+
+	var fileName = id + '-expt_' + pad(exptId, 3) + '-' + dateString;
+	var data = req.rawBody + '\n' + rawData.join('\n');
+	fs.writeFileSync('logs/' + fileName, data);
+	rawData = [];
+	res.send('OK');
+});
+
+app.post('/info', function(req, res) {
+	console.log(req.rawBody);
+	res.send('OK');
+});
+
+app.post('/raw-data', function(req, res) {
+	// Anything uploaded to raw-data gets appended to the next uploaded file
+	console.log('Got raw-data');
+	rawData.push(req.rawBody);
+	res.send('OK');
 });
 
 app.get('/cpu-config', function (req, res) {
