@@ -1,45 +1,5 @@
 window.onload = function() {
-	if(!window.Android) {
-		window.Android = {
-			clearLogcat: function() {},
-			startMonsoon: function() {},
-			stopMonsoon: function() {},
-			runPowerSync: function() {},
-			setAmbientTemperature: function() {},
-			systemTime: function() { return 0;},
-			upTime: function() { return 0;},
-			toast: function() {},
-			start: function() {},
-			finish: Android.finish || function() {},
-			post: function() {},
-			log: function() {},
-			getStartTemp: function() { return 10; },
-			getEndTemp: function() { return 12; },
-			getStep: function() { return 1; },
-			getNumIterations: function() { return 2; },
-			setURL: function() {},
-		};
-	}
-
 	Android.clearLogcat();
-
-	window.thermabox = {
-		setLimits: function(temp, threshold, cb) {
-			$.post('http://192.168.1.178:8080/set-limits', {
-				temperature: temp,
-				threshold: threshold,
-			}, cb);
-		},
-		getLimits: function(cb) {
-			$.get('http://192.168.1.178:8080/get-limits', cb);
-		},
-		getTemperature: function(cb) {
-			$.get('http://192.168.1.178:8080/get-temperature', cb);
-		},
-		getState: function(cb) {
-			$.get('http://192.168.1.178:8080/get-state', cb);
-		},
-	};
 
 	var uri = URI(window.location.href);
 	var q = uri.query(true);
@@ -142,6 +102,7 @@ window.onload = function() {
 		var interval = setInterval(function() {
 			thermabox.getState(function(state) {
 				console.log('Thermabox: state=' + state);
+				Android.post('162.243.227.41', 8212, 'info', 'Thermabox state=' + state);
 				if(state === 'stable') {
 					clearInterval(interval);
 					$(document).trigger('thermabox-stable');
@@ -159,7 +120,10 @@ window.onload = function() {
 				threshold: 0.5,
 			};
 			console.log('Setting limits: ' + JSON.stringify(limits));
-			thermabox.setLimits(window.temp, 0.5, checkStability);
+			thermabox.setLimits(window.temp, 0.5, function() {
+				// Start checking after 1s
+				setTimeout(checkStability, 1000);
+			});
 		} else {
 			checkStability();
 		}

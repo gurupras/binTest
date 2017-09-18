@@ -25,7 +25,7 @@ window.onload = function() {
 			jsTime: jsTime,
 		};
 
-		var ambientTemperature = 30;
+		var ambientTemperature = 33;
 		var monsoonHost = '192.168.1.198';
 		var monsoonPort = 20400;
 

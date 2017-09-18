@@ -6,7 +6,7 @@ var test_digits = 100000;
 
 Number.prototype.pad = function(size) {
 	var s = String(this);
-	while (s.length < (size)) {s = "0" + s;}
+	while (s.length < (size)) {s = '0' + s;}
 	return s;
 };
 
@@ -48,4 +48,4 @@ function CalculatePi(digits)
 //e is the event and e.data contains the JSON object
 self.onmessage = function(e) {
 	CalculatePi(e.data.value);
-}
+};

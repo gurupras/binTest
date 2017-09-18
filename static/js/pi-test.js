@@ -46,7 +46,7 @@ function PiTest(rampupRuns, rampupDigits) {
 			iterationsCompleted: test.throttledResults.length,
 			realTestTimeMs: test.realTestTimeMs,
 		};
-	}
+	};
 	function __log(str, postToScreen) {
 		try {
 			Android.log(msg);
