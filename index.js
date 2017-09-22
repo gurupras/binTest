@@ -6,7 +6,7 @@ var bodyparser = require('body-parser');
 var moment = require('moment');
 
 var app = express();
-app.use(bodyparser.text({limit: '200mb'}));
+app.use(bodyparser.json({limit: '200mb'}));
 
 var http = require('http').createServer(app);
 var yaml = require('js-yaml');
