@@ -99,13 +99,23 @@ window.onload = function() {
 
 	// Setup thermabox
 	function checkStability() {
+		var stableStart;
 		var interval = setInterval(function() {
 			thermabox.getState(function(state) {
 				console.log('Thermabox: state=' + state);
 				Android.post('162.243.227.41', 8212, 'info', 'Thermabox state=' + state);
 				if(state === 'stable') {
-					clearInterval(interval);
-					$(document).trigger('thermabox-stable');
+					if(!stableStart) {
+						stableStart = Date.now();
+					} else {
+						var now = Date.now();
+						if((now - stableStart) > 30 * 1000) {
+							clearInterval(interval);
+							$(document).trigger('thermabox-stable');
+						}
+					}
+				} else {
+					stableStart = undefined;
 				}
 			});
 		}, 1000);
