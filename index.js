@@ -2,11 +2,11 @@ var fs = require('fs');
 var path = require('path');
 var request = require('request');
 var express = require('express');
-var bodyparser = require('body-parser');
+var bodyParser = require('body-parser');
 var moment = require('moment');
 
 var app = express();
-app.use(bodyparser.json({limit: '200mb'}));
+app.use(bodyParser.json({limit: '200mb'}));
 
 var http = require('http').createServer(app);
 var yaml = require('js-yaml');
@@ -30,6 +30,8 @@ if(config.https) {
 	};
 	var https = require('https').createServer(httpsConfig, app);
 }
+
+var mongo = require('./mongo.js')(config.mongodb.url);
 
 
 function resolveNumCPUs(string) {
@@ -63,19 +65,22 @@ function resolveNumCPUs(string) {
 
 app.use('/static', express.static(path.join(__dirname, 'static')));
 
-app.use(function(req, res, next) {
-	var data = '';
-	req.on('data', function(chunk) {
-		data += chunk;
-	});
-	req.on('end', function() {
-		req.rawBody = data;
-		next();
-	});
-});
-
-app.get('/', function (req, res) {
-	res.send(fs.readFileSync(__dirname + '/static/html/index.html', 'utf-8'));
+app.post('/upload', function(req, res) {
+	console.log('Received upload POST')
+	var json = req.body;
+	console.log(JSON.stringify(json));
+	if(!config.upload_types.includes(json.type)) {
+		console.log(`Invalid data type: ${json.type}! Valid types: ${JSON.stringify(config.upload_types)}`);
+		res.status(400).send('Invalid data type');
+		return;
+	}
+	// TODO: Check for fields
+	mongo.insertDocument(json).then((result) => {
+		res.send('OK');
+	}).catch((err) => {
+		console.log('Handling catch')
+		res.status(500).send('Failed to upload: ' + err + '\n' + err.stack);
+	});;
 });
 
 app.get('/pi-test', function (req, res) {

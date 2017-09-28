@@ -23,6 +23,7 @@
     "fs": "0.0.1-security",
     "js-yaml": "^3.8.4",
     "moment": "^2.18.1",
+    "mongodb": "^2.2.31",
     "request": "^2.81.0"
   }
 }
