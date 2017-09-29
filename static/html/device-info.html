@@ -1,0 +1,55 @@
+<div class="row">
+  <div class="col s12">
+    <div class="center">
+      <div class="app-options page-options">
+        <ul style="display: inline;">
+          <li class="app-option-li page-option-li" ng-repeat="section in sections">
+            <a class="waves-effect waves-light btn btn-small silver app-option page-option" data-id="{{section.id}}" ng-click="changeSection($event)" data-callback="{{section.onClick}}">{{ section.label }}</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="info-div" ng-show="subSection === 'basic-info'">
+  <h4>Basic Info</h4>
+  <div class="row">
+    <div class="col s12">
+      <div id="device-info">
+        <pre class="preformatted">
+{{ deviceIDStr }}
+        </pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="info-div" ng-show="subSection === 'hardware-info'">
+  <h4>Hardware Info</h4>
+  <div class="row">
+    <div class="col s12">
+      <div id="device-info">
+        <pre class="preformatted">
+{{ deviceInfoStr }}
+        </pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="info-div" ng-show="subSection === 'temperature-info'">
+  <h4>Temperature Info</h4>
+  <div class="row">
+    <div class="col s12">
+      <div class="progress-preloader" ng-show="loading === true">
+        <div class="progress">
+          <div class="indeterminate"></div>
+        </div>
+      </div>
+
+      <div id="temperature-plot-div" style="height: 300px; width: 100%">
+      </div>
+    </div>
+  </div>
+</div>

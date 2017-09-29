@@ -4,8 +4,10 @@ var request = require('request');
 var express = require('express');
 var bodyParser = require('body-parser');
 var moment = require('moment');
+var compression = require('compression');
 
 var app = express();
+app.use(compression());
 app.use(bodyParser.json({limit: '200mb'}));
 
 var http = require('http').createServer(app);
@@ -65,10 +67,30 @@ function resolveNumCPUs(string) {
 
 app.use('/static', express.static(path.join(__dirname, 'static')));
 
+app.get('/', (req, res) => {
+	res.send(fs.readFileSync(__dirname + '/static/html/index.html', 'utf-8'));
+});
+
+app.post('/generate-temperature-plot', (req, res) => {
+	console.log('Making temperature-plot request ...');
+	request.post({
+		url: 'http://localhost:10070/',
+		body: JSON.stringify(req.body),
+	}, function(err, _res, body) {
+		if(err) {
+			console.log(`[temperature-plot]: Error: ${err}`);
+			res.status(500).send('' + err);
+		} else {
+			console.log(`[temperature-plot]: Success!`);
+			res.status(200).send(body);
+		}
+	});
+});
+
 app.post('/upload', function(req, res) {
 	console.log('Received upload POST')
 	var json = req.body;
-	console.log(JSON.stringify(json));
+	//console.log(JSON.stringify(json));
 	if(!config.upload_types.includes(json.type)) {
 		console.log(`Invalid data type: ${json.type}! Valid types: ${JSON.stringify(config.upload_types)}`);
 		res.status(400).send('Invalid data type');
@@ -78,7 +100,6 @@ app.post('/upload', function(req, res) {
 	mongo.insertDocument(json).then((result) => {
 		res.send('OK');
 	}).catch((err) => {
-		console.log('Handling catch')
 		res.status(500).send('Failed to upload: ' + err + '\n' + err.stack);
 	});;
 });

@@ -8,7 +8,7 @@ module.exports = function(url) {
 
 	function sanitizeDoc(doc) {
 		var keys = Object.keys(doc);
-		console.log(`${JSON.stringify(keys)}`);
+		//console.log(`${JSON.stringify(keys)}`);
 		for(var idx = 0; idx < keys.length; idx++) {
 			var key = keys[idx];
 			var value = doc[key];
@@ -17,7 +17,7 @@ module.exports = function(url) {
 			}
 			var _key = key.replace(/[\.\$]/g, '>');
 			if(_key !== key) {
-				console.log(`Replacing key ${key} with ${_key}`);
+				//console.log(`Replacing key ${key} with ${_key}`);
 				delete doc[key];
 				doc[_key] = value;
 			}
@@ -26,14 +26,14 @@ module.exports = function(url) {
 	}
 
 	ret.insertDocument = async function(doc, callback) {
-		console.log('Sanitizing document ...');
+		//console.log('Sanitizing document ...');
 		var doc = sanitizeDoc(doc);
 		await ret.connect();
-		console.log(`Inserting document: ${JSON.stringify(doc)}`);
+		//console.log(`Inserting document: ${JSON.stringify(doc)}`);
 		var collection = ret.db.collection('results');
 		return new Promise((resolve, reject) => {
 			collection.insert(doc).then((result) => {
-				console.log(`Insert result: ${JSON.stringify(result)}`);
+				//console.log(`Insert result: ${JSON.stringify(result)}`);
 				resolve(result);
 			}).catch((err) => {
 				console.log(err && err.stack);
