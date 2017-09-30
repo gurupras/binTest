@@ -5,6 +5,8 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var moment = require('moment');
 var compression = require('compression');
+var morgan = require('morgan');
+var util = require('util');
 
 var app = express();
 app.use(compression());
@@ -35,6 +37,19 @@ if(config.https) {
 
 var mongo = require('./mongo.js')(config.mongodb.url);
 
+
+morgan.token('x-real-ip', function(req) {
+	//console.log('headers:\n' + JSON.stringify(req.headers) + '\n');
+	return req.headers['x-real-ip'];
+});
+
+if(process.env.NODE_ENV === 'test') {
+	app.use(morgan('combined', {
+		skip: function(req, res) { return true; }
+	}));
+} else {
+	app.use(morgan(':x-real-ip - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"'));
+}
 
 function resolveNumCPUs(string) {
 	string = string.toLowerCase();
@@ -71,19 +86,65 @@ app.get('/', (req, res) => {
 	res.send(fs.readFileSync(__dirname + '/static/html/index.html', 'utf-8'));
 });
 
-app.post('/generate-temperature-plot', (req, res) => {
-	console.log('Making temperature-plot request ...');
-	request.post({
-		url: 'http://localhost:10070/',
-		body: JSON.stringify(req.body),
-	}, function(err, _res, body) {
-		if(err) {
-			console.log(`[temperature-plot]: Error: ${err}`);
-			res.status(500).send('' + err);
-		} else {
-			console.log(`[temperature-plot]: Success!`);
-			res.status(200).send(body);
-		}
+app.get('/generate-temperature-plot', (req, res) => {
+	var qs = req.query;
+	// TODO: Get last 12 hours of data from mongoDB
+	// for this deviceID and ship it over to python to plot
+	var hours = qs.hours;
+	var deviceID = qs.deviceID;
+	var now = Date.now();
+	var since = now - (hours * 60 * 60 * 1000);
+	//console.log(`${JSON.stringify(deviceID)}`);
+	var mongoDBQuery = {
+		$or: [
+			{
+				'deviceID.Settings>Secure>ANDROID_ID': deviceID['Settings.Secure.ANDROID_ID'],
+			},
+			{
+				'DeviceID.ICCID': deviceID.ICCID,
+			},
+			{
+				'DeviceID.IMEI': deviceID.IMEI,
+			},
+		],
+		type: 'temperature-data',
+		lastTimestamp: {$gt: since},
+	};
+	console.log(`${JSON.stringify(mongoDBQuery)}`);
+	mongo.query(mongoDBQuery).then((result) => {
+		result.sort({lastTimestamp: 1}).toArray((err, docs) => {
+			if(err) {
+				console.log(err && err.stack);
+				res.status(500).send(err.message);
+				return;
+			}
+			var timestamps = [];
+			var temperatures = [];
+			console.log(`docs=${docs.length}`);
+			for(var idx = 0; idx < docs.length; idx++) {
+				timestamps.push.apply(timestamps, docs[idx]['timestamps']);
+				temperatures.push.apply(temperatures, docs[idx]['temperatures']);
+			}
+			console.log(`timestamps=${timestamps.length} temperatures=${temperatures.length}`);
+			var json = {
+				timestamps: timestamps,
+				temperatures: temperatures,
+			};
+			console.log('Making temperature-plot request ...');
+			request.post({
+				url: 'http://localhost:10070/',
+				body: JSON.stringify(json),
+				gzip: true,
+			}, function(err, _res, body) {
+				if(err) {
+					console.log(`[temperature-plot]: Error: ${err}`);
+					res.status(500).send('' + err);
+				} else {
+					console.log(`[temperature-plot]: Success!`);
+					res.status(200).send(body);
+				}
+			});
+		});
 	});
 });
 
@@ -124,7 +185,8 @@ function nowDateStr() {
 	var dateStr = now.format('YYYY-MM-DD HH:mm:ss');
 	return dateStr;
 }
-app.post('/upload', function(req, res) {
+
+app.post('/harness-upload', function(req, res) {
 	var id = req.get('device-id');
 	var exptId = req.get('expt-id');
 	function pad(num, size){ return ('000000000' + num).substr(-size); }

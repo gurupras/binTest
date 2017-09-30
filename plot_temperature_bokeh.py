@@ -24,10 +24,11 @@ def generate_temperature_data():
 	return data
 
 def sanitize_data(data):
-	x = []
-	y = []
-	[(x.append(X['timestamp']), y.append(X['temperature'])) for X in data]
-	return x, y
+#	x = []
+#	y = []
+#	[(x.append(X['timestamp']), y.append(X['temperature'])) for X in data]
+#	return x, y
+	return data['timestamps'], data['temperatures']
 
 def main(argv):
 	data = generate_temperature_data()

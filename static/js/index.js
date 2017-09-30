@@ -179,31 +179,30 @@
     });
 
     $scope.updateTemperaturePlot = function() {
-      var data = processAndroidData(AndroidAPI.getTemperatureData());
-      var json = JSON.parse(data);
-      if(json.length > 0) {
-        $scope.loading = true;
-        $.ajax({
-          type: 'POST',
-          url: 'generate-temperature-plot',
-          contentType: 'application/json',
-          data: data,
-          dataType: 'json',
-          processData: false,
-          success: function(data) {
-            // FIXME: For some reason, this is only working on error
-            var script = $(data.script);
-            var div = $(data.div);
-            $('#temperature-plot-div').append(div);
-            $('#temperature-plot-div').append(script);
-            $scope.$apply(() => {
-              $scope.loading = false;
-            });
-          },
-          error: function(e) {
-          },
-        });
-      }
+      var params = {
+        hours: 12,
+        deviceID: JSON.parse(JSON.stringify($scope.deviceID)),
+      };
+
+      $scope.loading = true;
+      $.ajax({
+        type: 'GET',
+        url: 'generate-temperature-plot',
+        data: params,
+        dataType: 'json',
+        success: function(data) {
+          // FIXME: For some reason, this is only working on error
+          var script = $(data.script);
+          var div = $(data.div);
+          $('#temperature-plot-div').append(div);
+          $('#temperature-plot-div').append(script);
+          $scope.$apply(() => {
+            $scope.loading = false;
+          });
+        },
+        error: function(e) {
+        },
+      });
     };
   }]);
 

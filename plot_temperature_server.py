@@ -11,6 +11,8 @@ from plot_temperature_bokeh import sanitize_data
 
 import tornado.ioloop
 import tornado.web
+from tornado.httpserver import HTTPServer
+
 
 def setup_parser():
 	parser = argparse.ArgumentParser()
@@ -44,6 +46,7 @@ def main(argv):
 	args = parser.parse_args(argv[1:])
 
 	app = make_app()
+	server = HTTPServer(app, decompress_request=True)
 	app.listen(args.port)
 	tornado.ioloop.IOLoop.current().start()
 
