@@ -42,6 +42,14 @@ module.exports = function(url) {
 		});
 	};
 
+	ret.query = async function(query) {
+		await ret.connect();
+		var collection = ret.db.collection('results');
+		return new Promise((resolve, reject) => {
+			resolve(collection.find(query));
+		});
+	}
+
 	ret.close = function() {
 		ret.db.close();
 	};
