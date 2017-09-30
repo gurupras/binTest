@@ -194,6 +194,7 @@
           // FIXME: For some reason, this is only working on error
           var script = $(data.script);
           var div = $(data.div);
+          $('#temperature-plot-div').empty();
           $('#temperature-plot-div').append(div);
           $('#temperature-plot-div').append(script);
           $scope.$apply(() => {
