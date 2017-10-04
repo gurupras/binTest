@@ -8,3 +8,6 @@ dist
 /config.yaml
 *.vim
 /logs
+
+/database
+*.pyc

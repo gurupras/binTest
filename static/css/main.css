@@ -14,10 +14,12 @@ body {
 }
 
 .btn:hover {
-  /*background-image: linear-gradient(#3498db,#258cd1);*/
+  background-image: linear-gradient(#3498db,#258cd1);
 }
 .btn.selected {
-  background-image: linear-gradient(#3498db,#258cd1);
+  /*background-image: linear-gradient(#3498db,#258cd1);*/
+  background-image: linear-gradient(#155179,#1c6da2);
+  color: #fff !important;
 }
 main {
   padding-top: 1em;
@@ -56,4 +58,8 @@ main {
 
 canvas {
   background-color: #fff;
+}
+
+[ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
+  display: none !important;
 }

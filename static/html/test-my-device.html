@@ -1,0 +1,29 @@
+<div class="row">
+  <div class="col s12">
+    <div class="info-div">
+      <h3> Test My Device </h3>
+      <div id="about-content" style="margin-top: 5em;">
+        <div class="info-div">
+          <div class="row">
+            <div class="col s12 m6">
+              <p>The test process involves running a CPU intensive workload to measure the quality of your smartphone CPU. After the workload is done, the test measures the rate at which
+              your smartphone is able to cool down.</p>
+              <p>Overall, the test is expected to take about {{testDuration}}</p>
+
+              <p>To ensure accurate results, make sure you turn your screen off after starting the test and ensure the following conditions are satisfied:</p>
+              <ul id="test-prerequisites">
+                <li ng-repeat="req in requirements">
+                  <input id="{{req.id}}" type="checkbox" ng-checked="{{req.checkedCondition}}">
+                  <label for="{{req.id}}">{{req.label}}</label>
+                </li>
+              </ul>
+
+              <a class="waves-effect waves-light btn btn-small silver page-option" ng-hide="runningTest" ng-disabled="runningTest" ng-click="runningTest = true; startTest()">Start Test</a>
+              <a class="waves-effect waves-light btn btn-small silver page-option" ng-show="runningTest" ng-disabled="interrupting" ng-click="interruptTest()">Interrupt Test</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

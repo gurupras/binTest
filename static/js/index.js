@@ -26,14 +26,14 @@
     getDeviceID: function() {
       //return this.stockResponse();
       return JSON.stringify({
-        "IMEI": "353626070549717",
-        "Settings.Secure.ANDROID_ID": "c3004cdd541bea40",
-        "Build.PRODUCT": "bullhead",
-        "Build.SERIAL": "01aff1e7b54aa0d8",
-        "Build.BRAND": "google",
-        "ICCID": "310260808169237",
-        "Build.MANUFACTURER": "LGE",
-        "Build.MODEL": "Nexus 5X"
+        "IMEI": "000000000000000",
+        "Settings.Secure.ANDROID_ID": "0000000000000000",
+        "Build.PRODUCT": "generic",
+        "Build.SERIAL": "0000000000000000",
+        "Build.BRAND": "NA",
+        "ICCID": "000000000000000",
+        "Build.MANUFACTURER": "Generic",
+        "Build.MODEL": "Generic"
       });
     },
     getDeviceInfo: function() {
@@ -54,9 +54,52 @@
     isRootAvailable: function() {
       return false;
     },
+    isPluggedIn: function() {
+      //return false;
+      return Math.random() > 0.9;
+    },
+    getBatteryLevel: function() {
+      //return 1.0;
+      return Math.min(1, 0.7 + Math.random());
+    },
+    getTemperature: function() {
+      return JSON.stringify({
+        temperature: 25.0,
+        timestamp: Date.now(),
+      });
+    },
+    clearLogcat: function() {
+      return;
+    },
+    log: function(tag, msg) {
+      console.log(`AndroidAPI: ${tag}: ${msg}`);
+    },
+    systemTime: function() {
+      return Date.now();
+    },
+    upTime: function() {
+      return 1000.0;
+    },
+    sleepForDuration: function(duration) {
+      return "{}";
+    },
+    addChargeStateCallback: function(content) {
+      window.csc = setInterval(() => {
+        eval(content);
+      }, 1000);
+    },
+    removeChargeStateCallback: function() {
+      if(window.csc) {
+        clearInterval(window.csc);
+      };
+    },
+    post: function(host, port, endpoint, msg) {
+      console.log(`${JSON.stringify(msg, null, 4)}`);
+    }
   };
 
   var app = angular.module("mainApp", ["ngRoute"]);
+  $(document).trigger('angular-ready', app);
 
   app.config(function($routeProvider) {
     $routeProvider
@@ -69,9 +112,9 @@
       templateUrl: 'static/html/cpu-bin-info.html',
       controller: 'cpuBinInfoController',
     })
-    .when('/run-workload', {
-      templateUrl: 'static/html/workload.html',
-      controller: 'workloadController',
+    .when('/test-my-device', {
+      templateUrl: 'static/html/test-my-device.html',
+      controller: 'testMyDeviceController',
     })
     .otherwise({
       templateUrl: 'static/html/about.html',
@@ -100,9 +143,9 @@
         href: 'cpu-bin-info',
       },
       {
-        label: 'Run Experiment',
-        id: 'run-experiment',
-        href: 'run-experiment',
+        label: 'Test My Device',
+        id: 'test-my-device',
+        href: 'test-my-device',
       },
     ];
 
@@ -230,4 +273,5 @@
   app.controller('aboutController', ['$scope', '$window', function($scope, $window) {
     console.log('Running aboutController');
   }]);
+
 })();
