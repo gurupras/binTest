@@ -1,6 +1,6 @@
-$(document).on('angular-ready', (e, app) => {
+$(document).on('angular-ready', function(e, app) {
   app.controller('testMyDeviceController', ['$scope', '$window', function($scope, $window) {
-    console.log('Running workloadController');
+    console.log('Running testMyDeviceController');
 
     $scope.testDuration = '12 minutes';
 
@@ -21,8 +21,14 @@ $(document).on('angular-ready', (e, app) => {
       // },
     ];
 
-    $scope.$on('$viewContentLoaded', () => {
-      $scope.$parent.changeSection('test-my-device');
+    function clear() {
+      $scope.runningTest = undefined;
+      $scope.test = undefined;
+      $scope.interrupting = undefined;
+      $scope.testResults = '';
+    }
+    clear();
+    $scope.$on('$viewContentLoaded', function() {
 
       $scope.checkRequisites = function() {
         $scope.isPluggedIn = AndroidAPI.isPluggedIn();
@@ -38,12 +44,12 @@ $(document).on('angular-ready', (e, app) => {
 
       $scope.callbackCode = AndroidAPI.addChargeStateCallback(`
         var $scope = angular.element($('#test-prerequisites')[0]).scope();
-        $scope.$apply(() => {
+        $scope.$apply(function() {
           $scope.checkRequisites();
         });
       `);
 
-      $scope.$on('$destroy', () => {
+      $scope.$on('$destroy', function() {
         if($scope.callbackCode) {
           AndroidAPI.removeChargeStateCallback($scope.callbackCode);
         }
@@ -54,7 +60,7 @@ $(document).on('angular-ready', (e, app) => {
 
       $scope.startTest = function() {
         $scope.checkRequisites();
-        AndroidAPI.clearLogcat();
+        var exptID = AndroidAPI.startExperiment();
 
         var tempReading = JSON.parse(AndroidAPI.getTemperature());
         var startTemp = tempReading.temperature;
@@ -75,6 +81,28 @@ $(document).on('angular-ready', (e, app) => {
 
         console.log('Running test');
 
+        function uploadData(str) {
+          var key = AndroidAPI.startUploadData();
+
+          MAX_CHUNK_SIZE = 32 * 1024;
+          function chunkSubstr(str, size) {
+            var numChunks = Math.ceil(str.length / size),
+                chunks = new Array(numChunks);
+
+            for(var i = 0, o = 0; i < numChunks; ++i, o += size) {
+              chunks[i] = str.substr(o, size);
+            }
+
+            return chunks;
+          }
+          var chunks = chunkSubstr(str, MAX_CHUNK_SIZE);
+          for(var idx = 0; idx < chunks.length; idx++) {
+            AndroidAPI.upload(key, chunks[idx]);
+          }
+          AndroidAPI.finishUploadData(key);
+          return key;
+        }
+
         $(window).on('test-finished', function() {
           var cooldownData = null;
           try {
@@ -86,8 +114,14 @@ $(document).on('angular-ready', (e, app) => {
           }
           AndroidAPI.toast('Uploading logs');
           var testResults = $scope.test.getResult();
+          testResults['startTemperature'] = startTemp;
           testResults['cooldownData'] = cooldownData;
-          AndroidAPI.post('http://dirtydeeds.cse.buffalo.edu/smartphones.exposed/', 8212, 'upload-expt-data', JSON.stringify(testResults));
+          var key = uploadData(JSON.stringify(testResults));
+          AndroidAPI.uploadExperimentData('http://dirtydeeds.cse.buffalo.edu/smartphones.exposed/', 'upload-expt-data', key);
+          $scope.$root.testResults.push(exptID);
+          $scope.$apply(function() {
+            $scope.$root.changeSection('test-results');
+          });
         });
 
         $scope.test = PiTest();
@@ -96,11 +130,13 @@ $(document).on('angular-ready', (e, app) => {
 
       $scope.interruptTest = function() {
         $scope.test.interrupt();
-        $(window).one('interrupt-finished', () => {
-          $scope.$apply(() => {
+        $(window).one('interrupt-finished', function() {
+          $scope.$apply(function() {
             $scope.interrupting = undefined;
             $scope.runningTest = false;
+            $scope.test = undefined;
           });
+          AndroidAPI.interruptExperiment();
         });
       };
 
@@ -124,11 +160,11 @@ function createPiWebWorker() {
 
 
 function PiTest(digits) {
-  this.COOLDOWN_DURATION_MS = 1 * 20 * 1000;
+  this.COOLDOWN_DURATION_MS = 5 * 60 * 1000;
   this.numWebWorkers = navigator.hardwareConcurrency;
   this.digits = digits || 15000;
   this.workers = [];
-  this.testTimeMs = 1 * 5 * 1000;
+  this.testTimeMs = 7 * 60 * 1000;
   var test = this;
   this.zeroTime = Date.now();
   this.startTime = undefined;

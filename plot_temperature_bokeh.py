@@ -24,11 +24,15 @@ def generate_temperature_data():
 	return data
 
 def sanitize_data(data):
-#	x = []
-#	y = []
-#	[(x.append(X['timestamp']), y.append(X['temperature'])) for X in data]
-#	return x, y
-	return data['timestamps'], data['temperatures']
+	timestamps = data['timestamps']
+	temp_data = data['temperatures']
+	def_key = temp_data[0].get('defaultKey', None)
+	if def_key is None or temp_data[0].get(def_key, None) is None:
+		# Default key is wrong..just use first key
+		def_key = temp_data[0].keys(0)
+		print 'WARNING: No defaultKey found! Using key[0]={}'.format(def_key)
+	temperatures = [x[def_key] for x in temp_data]
+	return timestamps, temperatures
 
 def main(argv):
 	data = generate_temperature_data()

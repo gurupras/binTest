@@ -27,7 +27,7 @@
       //return this.stockResponse();
       return JSON.stringify({
         "IMEI": "000000000000000",
-        "Settings.Secure.ANDROID_ID": "0000000000000000",
+        "Settings.Secure.ANDROID_ID": "c3004cdd541bea40", /* c3004cdd541bea40 */
         "Build.PRODUCT": "generic",
         "Build.SERIAL": "0000000000000000",
         "Build.BRAND": "NA",
@@ -84,7 +84,7 @@
       return "{}";
     },
     addChargeStateCallback: function(content) {
-      window.csc = setInterval(() => {
+      window.csc = setInterval(function() {
         eval(content);
       }, 1000);
     },
@@ -93,7 +93,14 @@
         clearInterval(window.csc);
       };
     },
-    post: function(host, port, endpoint, msg) {
+    startUploadData: function() {
+      return "";
+    },
+    upload: function() {
+    },
+    finishUploadData: function(key) {
+    },
+    uploadExperimentData: function(origin, endpoint, msg) {
       console.log(`${JSON.stringify(msg, null, 4)}`);
     }
   };
@@ -116,36 +123,51 @@
       templateUrl: 'static/html/test-my-device.html',
       controller: 'testMyDeviceController',
     })
+    .when('/test-results', {
+      templateUrl: 'static/html/test-results.html',
+      controller: 'testResultsController',
+    })
+    .when('/debug', {
+      templateUrl: 'static/html/debug.html',
+      controller: 'debugController',
+    })
     .otherwise({
       templateUrl: 'static/html/about.html',
       controller: 'aboutController',
     });
   });
 
-  app.run(['$rootScope', function($rootScope) {
+  app.run(['$rootScope', '$window', function($rootScope, $window) {
     $rootScope.deviceID = JSON.parse(AndroidAPI.getDeviceID());
     $rootScope.deviceIDStr = JSON.stringify($rootScope.deviceID, null, 2);
     $rootScope.deviceInfo = JSON.parse(AndroidAPI.getDeviceInfo());
     $rootScope.deviceInfoStr = JSON.stringify({cpus: $rootScope.deviceInfo.cpus}, null, 2);
-  }]);
 
-  app.controller('indexController', ['$scope', '$window', function($scope, $window) {
-    console.log('Running indexController');
+    $rootScope.testResults = [];
+
+    var $scope = $rootScope;
     $scope.sections = [
       {
         label: 'Device Info',
         id: 'device-info',
-        href: 'device-info',
       },
       {
         label: 'CPU Bin Info',
         id: 'cpu-bin-info',
-        href: 'cpu-bin-info',
       },
       {
         label: 'Test My Device',
         id: 'test-my-device',
-        href: 'test-my-device',
+      },
+      {
+        label: 'Test Results',
+        id: 'test-results',
+        hide: 'testResults.length === 0',
+      },
+      {
+        label: 'Debug',
+        id: 'debug',
+        hide: 'false',
       },
     ];
 
@@ -162,15 +184,50 @@
       oldEl.removeClass('selected');
       el.addClass('selected');
       $scope.section = el.data('id');
-      var href = '#!/';
-      if(el.data('href')) {
-        href += el.data('href');
+      var hash = `#!/`;
+      if($scope.section) {
+        hash += $scope.section;
       }
-      $window.location.assign(href);
+      if(hash !== $window.location.hash) {
+        $window.location.assign(hash);
+      }
     };
 
-    $('.brand-logo').on('click touchstart', () => {
-      $scope.$apply(() => {
+    $scope.$on('$viewContentLoaded', function() {
+      var hash = $window.location.hash.substr(3);
+      if(hash !== '') {
+        $scope.changeSection(hash);
+      }
+    });
+
+    // Get any test results
+    $rootScope.updateTestResults = function() {
+      return new Promise(function(resolve, reject) {
+        $.ajax({
+          type: 'GET',
+          url: 'device-experiment-ids',
+          data: {deviceID: $rootScope.deviceID},
+          dataType: 'json',
+          success: function(data) {
+            $rootScope.$apply(function() {
+              $rootScope.testResults = data;
+            });
+            resolve();
+          },
+          error: function(e) {
+            reject(e);
+          },
+        });
+      });
+    };
+    $rootScope.updateTestResults();
+  }]);
+
+  app.controller('indexController', ['$scope', '$window', function($scope, $window) {
+    console.log('Running indexController');
+
+    $('.brand-logo').on('click touchstart', function() {
+      $scope.$apply(function() {
         $scope.changeSection({target: undefined});
       });
     });
@@ -216,8 +273,7 @@
       }
     };
 
-    $scope.$on('$viewContentLoaded', () => {
-      $scope.$parent.changeSection('device-info');
+    $scope.$on('$viewContentLoaded', function() {
       // Temperature data
     });
 
@@ -240,7 +296,7 @@
           $('#temperature-plot-div').empty();
           $('#temperature-plot-div').append(div);
           $('#temperature-plot-div').append(script);
-          $scope.$apply(() => {
+          $scope.$apply(function() {
             $scope.loading = false;
           });
         },
@@ -251,8 +307,7 @@
   }]);
 
   app.controller('cpuBinInfoController', ['$scope', '$window', function($scope, $window) {
-    $scope.$on('$viewContentLoaded', () => {
-      $scope.$parent.changeSection('cpu-bin-info');
+    $scope.$on('$viewContentLoaded', function() {
       var data = AndroidAPI.getCPUBin();
       data = processAndroidData(data);
       if(data === '{}') {

@@ -20,6 +20,9 @@
 
               <a class="waves-effect waves-light btn btn-small silver page-option" ng-hide="runningTest" ng-disabled="runningTest" ng-click="runningTest = true; startTest()">Start Test</a>
               <a class="waves-effect waves-light btn btn-small silver page-option" ng-show="runningTest" ng-disabled="interrupting" ng-click="interruptTest()">Interrupt Test</a>
+
+              <div>
+                <p ng-bind="testResults"></p>
             </div>
           </div>
         </div>

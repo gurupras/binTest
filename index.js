@@ -51,6 +51,25 @@ if(process.env.NODE_ENV === 'test') {
 	app.use(morgan(':x-real-ip - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"'));
 }
 
+
+function generateDeviceQuery(deviceID, extras) {
+	var basicQuery = {
+		$or: [
+			{
+				'deviceID.Settings>Secure>ANDROID_ID': deviceID['Settings.Secure.ANDROID_ID'],
+			},
+			{
+				'DeviceID.ICCID': deviceID.ICCID,
+			},
+			{
+				'DeviceID.IMEI': deviceID.IMEI,
+			},
+		],
+	};
+	Object.assign(basicQuery, extras);
+	return basicQuery;
+}
+
 function resolveNumCPUs(string) {
 	string = string.toLowerCase();
 	// Split by '&' to handle big.LITTLE
@@ -95,21 +114,10 @@ app.get('/generate-temperature-plot', (req, res) => {
 	var now = Date.now();
 	var since = now - (hours * 60 * 60 * 1000);
 	//console.log(`${JSON.stringify(deviceID)}`);
-	var mongoDBQuery = {
-		$or: [
-			{
-				'deviceID.Settings>Secure>ANDROID_ID': deviceID['Settings.Secure.ANDROID_ID'],
-			},
-			{
-				'DeviceID.ICCID': deviceID.ICCID,
-			},
-			{
-				'DeviceID.IMEI': deviceID.IMEI,
-			},
-		],
+	var mongoDBQuery = generateDeviceQuery(deviceID, {
 		type: 'temperature-data',
 		lastTimestamp: {$gt: since},
-	};
+	});
 	console.log(`${JSON.stringify(mongoDBQuery)}`);
 	mongo.query(mongoDBQuery).then((result) => {
 		result.sort({lastTimestamp: 1}).toArray((err, docs) => {
@@ -132,7 +140,7 @@ app.get('/generate-temperature-plot', (req, res) => {
 			};
 			console.log('Making temperature-plot request ...');
 			request.post({
-				url: 'http://localhost:10070/',
+				url: 'http://localhost:10070/temperature-plot',
 				body: JSON.stringify(json),
 				gzip: true,
 			}, function(err, _res, body) {
@@ -149,7 +157,7 @@ app.get('/generate-temperature-plot', (req, res) => {
 });
 
 app.post('/upload', function(req, res) {
-	console.log('Received upload POST')
+	console.log(`Received upload POST: type=${req.body.type}`);
 	var json = req.body;
 	//console.log(JSON.stringify(json));
 	if(!config.upload_types.includes(json.type)) {
@@ -165,6 +173,101 @@ app.post('/upload', function(req, res) {
 	});;
 });
 
+app.get('/experiment-results', (req, res) => {
+	var deviceID = req.query.deviceID;
+	var exptID = req.query.experimentID;
+
+	var mongoDBQuery = generateDeviceQuery(deviceID, {
+		type: 'expt-data',
+		experimentID: exptID,
+	});
+	mongo.query(mongoDBQuery).then((result) => {
+		result.toArray((err, docs) => {
+			if(err) {
+				console.log(err && err.stack);
+				res.status(500).send(err.message);
+				return;
+			}
+			// TODO: Format test data into 3 components
+			// testInfo, testScore and testPlot and send it back
+			if(docs.length === 0) {
+				res.send(JSON.stringify({
+					error: 'Test not found. If you just completed the experiment, retry in some time as the logs may not have been uploaded yet',
+				}));
+				return;
+			}
+			var result = JSON.parse(JSON.stringify(docs[0]));
+			delete result._id;
+			var keys = ['digits', 'startTime', 'testTimeMs', 'experimentID'];
+			testInfo = {
+				experimentID: result.experimentID,
+				digits: result.digits,
+				startTime: result.startTime,
+				testTimeMs: result.testTimeMs,
+				iterationsCompleted: result.iterations.length,
+				startTemperature: result.startTemperature,
+			};
+
+			request.post({
+				url: 'http://localhost:10070/experiment-plot',
+				body: JSON.stringify(result),
+				gzip: true,
+			}, function(err, _res, body) {
+				if(err) {
+					console.log(`[experiment-plot]: Error: ${err}`);
+					res.status(500).send('' + err);
+				} else {
+					console.log(`[experiment-plot]: Success!`);
+					res.send(JSON.stringify({
+						testInfo: testInfo,
+						testScore: 'TBD',
+						testPlot: JSON.parse(body),
+					}));
+				}
+			});
+		});
+	});
+});
+
+app.get('/device-experiment-ids', (req, res) => {
+	var deviceID = req.query.deviceID;
+	var mongoDBQuery = generateDeviceQuery(deviceID, {
+		type: 'expt-data',
+	});
+	mongo.query(mongoDBQuery).then((result) => {
+		result.toArray((err, docs) => {
+			if(err) {
+				console.log(err && err.stack);
+				res.status(500).send(err.message);
+				return;
+			}
+			var experimentIDs = [];
+			for(var idx = 0; idx < docs.length; idx++) {
+				var doc = docs[idx];
+				experimentIDs.push(doc.experimentID);
+			}
+			console.log(`Found ${experimentIDs.length} experiments for device=${deviceID['Settings.Secure.ANDROID_ID']}`);
+			res.send(JSON.stringify(experimentIDs));
+		});
+	});
+});
+app.get('/device-rank', function(req, res) {
+	var deviceID = req.query.deviceID;
+	var model = deviceID['BUILD.MODEL'];
+	request.post({
+		url: 'http://localhost:10070/',
+		body: JSON.stringify(json),
+		gzip: true,
+	}, function(err, _res, body) {
+		if(err) {
+			console.log(`[temperature-plot]: Error: ${err}`);
+			res.status(500).send('' + err);
+		} else {
+			console.log(`[temperature-plot]: Success!`);
+			res.status(200).send(body);
+		}
+	});
+});
 app.get('/pi-test', function (req, res) {
 	res.send(fs.readFileSync(__dirname + '/static/html/pi-test.html', 'utf-8'));
 });

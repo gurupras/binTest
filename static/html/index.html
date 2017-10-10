@@ -18,6 +18,8 @@
       <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.6.6/angular.js" defer></script>
       <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.6.6/angular-route.min.js" defer></script>
       <script src="static/js/test-my-device.js" defer></script>
+      <script src="static/js/test-results.js" defer></script>
+      <script src="static/js/debug.js" defer></script>
       <script src="static/js/index.js" defer></script>
 
       <!-- Bokeh -->
@@ -56,7 +58,7 @@
               <div class="app-options center hide-on-med-and-down">
                 <ul style="display: inline;">
                   <li class="app-option-li" ng-repeat="section in sections">
-                    <a class="waves-effect waves-light btn silver app-option" data-href="{{section.href}}" data-id="{{section.id}}" ng-click="changeSection($event)">{{ section.label }}</a>
+                    <a class="waves-effect waves-light btn silver app-option" ng-hide="{{section.hide}}" data-id="{{section.id}}" ng-click="changeSection($event)">{{ section.label }}</a>
                   </li>
                 </ul>
               </div>
