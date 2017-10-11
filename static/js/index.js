@@ -30,10 +30,10 @@
         "Settings.Secure.ANDROID_ID": "c3004cdd541bea40", /* c3004cdd541bea40 */
         "Build.PRODUCT": "generic",
         "Build.SERIAL": "0000000000000000",
-        "Build.BRAND": "NA",
+        "Build.BRAND": "google",
         "ICCID": "000000000000000",
-        "Build.MANUFACTURER": "Generic",
-        "Build.MODEL": "Generic"
+        "Build.MANUFACTURER": "LGE",
+        "Build.MODEL": "Nexus 5X"
       });
     },
     getDeviceInfo: function() {
@@ -140,8 +140,39 @@
   app.run(['$rootScope', '$window', function($rootScope, $window) {
     $rootScope.deviceID = JSON.parse(AndroidAPI.getDeviceID());
     $rootScope.deviceIDStr = JSON.stringify($rootScope.deviceID, null, 2);
-    $rootScope.deviceInfo = JSON.parse(AndroidAPI.getDeviceInfo());
-    $rootScope.deviceInfoStr = JSON.stringify({cpus: $rootScope.deviceInfo.cpus}, null, 2);
+    //$rootScope.deviceInfo = JSON.parse(AndroidAPI.getDeviceInfo());
+    $rootScope.deviceInfo = [];
+    $rootScope.deviceInfoStr = '{}';
+
+    $.ajax({
+      type: 'GET',
+      url: 'device-description',
+      data: {
+        deviceID: $rootScope.deviceID,
+      },
+      dataType: 'json',
+      success: function(data) {
+        if(data.error) {
+          $rootScope.$apply(function() {
+            $rootScope.deviceInfo = data.error;
+          });
+          return;
+        } else {
+          $rootScope.$apply(function() {
+            var keys = Object.keys(data[0]);
+            for(var idx = 0; idx < keys.length; idx++) {
+              var key = keys[idx];
+              var value = data[0][key];
+              $rootScope.deviceInfo.push({
+                key: key,
+                value: value,
+              });
+            }
+            $rootScope.deviceInfoStr = JSON.stringify($rootScope.deviceInfo);
+          });
+        }
+      },
+    });
 
     $rootScope.testResults = [];
 

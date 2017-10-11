@@ -30,9 +30,19 @@
   <div class="row">
     <div class="col s12">
       <div id="device-info">
-        <pre class="preformatted">
-{{ deviceInfoStr }}
-        </pre>
+        <ul>
+          <li ng-repeat="info in deviceInfo">
+            <div class="row" style="margin-top: 0; margin-bottom: 0;">
+              <div class="col s4 l3">
+                <span>{{info.key}}</span>
+              </div>
+              <div class="col s8 l3">
+                <span>{{info.value}}</span>
+              </div>
+            </div>
+          </li>
+
+        </ul>
       </div>
     </div>
   </div>

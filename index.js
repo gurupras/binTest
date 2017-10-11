@@ -37,6 +37,7 @@ if(config.https) {
 
 var mongo = require('./mongo.js')(config.mongodb.url);
 
+var fonoapi = require('./fonoapi.js')(config.fonoapi_key);
 
 morgan.token('x-real-ip', function(req) {
 	//console.log('headers:\n' + JSON.stringify(req.headers) + '\n');
@@ -70,39 +71,22 @@ function generateDeviceQuery(deviceID, extras) {
 	return basicQuery;
 }
 
-function resolveNumCPUs(string) {
-	string = string.toLowerCase();
-	// Split by '&' to handle big.LITTLE
-	var strings = string.split('&');
-	var ncpus = 0;	// Track total number of CPUs
-	var result = {};
-	for(var idx = 0; idx < strings.length; idx++) {
-		var cpus = 0;
-		if(string.startsWith('quad')) {
-			cpus = 4;
-		} else if(string.startsWith('dual')) {
-			cpus = 2;
-		} else {
-			cpus = 1;
-		}
-		// Right now, we only add ncpus.  If we planned on adding frequency
-		// information, that would go in here.
-		var cpuConfig = {
-			'ncpus': cpus,
-		};
-		result['cluster-' + idx] = cpuConfig;
-		// Increment total number of cpus
-		ncpus += cpus;
-	}
-	result['ncpus'] = ncpus;
-	return result;
-}
-
 
 app.use('/static', express.static(path.join(__dirname, 'static')));
 
 app.get('/', (req, res) => {
 	res.send(fs.readFileSync(__dirname + '/static/html/index.html', 'utf-8'));
+});
+
+app.get('/device-description', (req, res) => {
+	var qs = req.query;
+	var deviceID = qs.deviceID;
+	fonoapi.query(deviceID['Build.MODEL']).then((result) => {
+		res.send(JSON.stringify(result));
+	}).catch((err) => {
+		console.log(JSON.stringify(err));
+		res.send(JSON.stringify(err));
+	});
 });
 
 app.get('/generate-temperature-plot', (req, res) => {
@@ -341,7 +325,7 @@ app.get('/cpu-config', function (req, res) {
 			if (!error && response.statusCode == 200 && body.status !== 'error') {
 				console.log('Response: ' + JSON.stringify(body));
 				try {
-					var cpus = resolveNumCPUs(body[0].cpu);
+					var cpus = fonoapi.resolveNumCPUs(body[0].cpu);
 					res.send({
 						'status': 'OK',
 						'result': cpus,
@@ -359,7 +343,7 @@ app.get('/cpu-config', function (req, res) {
 							if (!error && response.statusCode == 200 && body.status !== 'error') {
 								console.log('Response: ' + JSON.stringify(body));
 								try {
-									var cpus = resolveNumCPUs(body[0].cpu);
+									var cpus = fonoapi.resolveNumCPUs(body[0].cpu);
 									res.send({
 										'status': 'OK',
 										'result': cpus
