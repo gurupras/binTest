@@ -17,10 +17,13 @@
       <script src="//cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js" defer></script>
       <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.6.6/angular.js" defer></script>
       <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.6.6/angular-route.min.js" defer></script>
-      <script src="static/js/test-my-device.js" defer></script>
-      <script src="static/js/test-results.js" defer></script>
-      <script src="static/js/debug.js" defer></script>
-      <script src="static/js/index.js" defer></script>
+      <script src="static/js/URI.min.js" defer></script>
+      <script src="static/dist/smartphones-exposed-pi-test.js" defer></script>
+      <script src="static/dist/test-my-device.js" defer></script>
+      <script src="static/dist/test-results.js" defer></script>
+      <script src="static/dist/debug.js" defer></script>
+      <script src="static/dist/sweep-test.js" defer></script>
+      <script src="static/dist/index.js" defer></script>
 
       <!-- Bokeh -->
       <script src="//cdn.pydata.org/bokeh/release/bokeh-0.12.9.min.js" defer></script>
@@ -51,27 +54,21 @@
 
   <main>
     <div class="ng-cloak" ng-app="mainApp">
-      <div class="container-fluid" ng-controller="indexController">
+      <div class="container-fluid" ng-controller="testingController">
         <div class="row">
           <div class="col s12">
             <div style="width: 100%;">
-              <div class="app-options center hide-on-med-and-down">
+              <div class="app-options center">
                 <ul style="display: inline;">
                   <li class="app-option-li" ng-repeat="section in sections">
-                    <a class="waves-effect waves-light btn silver app-option" ng-hide="{{section.hide}}" data-id="{{section.id}}" ng-click="changeSection($event)">{{ section.label }}</a>
-                  </li>
-                </ul>
-              </div>
-              <div class="app-options hide-on-large-only">
-                <ul style="display: inline;">
-                  <li class="app-option-li" ng-repeat="section in sections">
-                    <a class="waves-effect waves-light btn btn-small silver app-option" data-href="{{section.href}}" data-id="{{section.id}}" ng-click="changeSection($event)">{{ section.label }}</a>
+                    <a class="waves-effect waves-light btn silver app-option" ng-class="{'disabled': navigationDisabled}" ng-hide="{{section.hide}}" data-id="{{section.id}}" ng-click="changeSection($event)">{{ section.label }}</a>
                   </li>
                 </ul>
               </div>
             </div>
           </div>
         </div>
+
         <div class="row">
           <div class="col s12">
             <div ng-view>

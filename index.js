@@ -39,6 +39,14 @@ var mongo = require('./mongo.js')(config.mongodb.url);
 
 var fonoapi = require('./fonoapi.js')(config.fonoapi_key);
 
+var temperatureKeys;
+try {
+  temperatureKeys = yaml.safeLoad(fs.readFileSync('./temperature-keys.yaml', 'utf8'));
+} catch (e) {
+  console.log(e);
+	temperatureKeys = {};
+}
+
 morgan.token('x-real-ip', function(req) {
 	//console.log('headers:\n' + JSON.stringify(req.headers) + '\n');
 	return req.headers['x-real-ip'];
@@ -78,6 +86,10 @@ app.get('/', (req, res) => {
 	res.send(fs.readFileSync(__dirname + '/static/html/index.html', 'utf-8'));
 });
 
+app.get('/apk', (req, res) => {
+	res.download(`${__dirname}/static/assets/smartphones-exposed.apk`, 'smartphones-exposed.apk');
+});
+
 app.get('/device-description', (req, res) => {
 	var qs = req.query;
 	var deviceID = qs.deviceID;
@@ -89,11 +101,18 @@ app.get('/device-description', (req, res) => {
 	});
 });
 
+function sendError(code, msg, res) {
+	res.status(code).send(JSON.stringify({
+		msg: msg,
+	}));
+}
+
 app.get('/generate-temperature-plot', (req, res) => {
 	var qs = req.query;
 	// TODO: Get last 12 hours of data from mongoDB
 	// for this deviceID and ship it over to python to plot
 	var hours = qs.hours;
+	var utcOffset = qs.utcOffset;
 	var deviceID = qs.deviceID;
 	var now = Date.now();
 	var since = now - (hours * 60 * 60 * 1000);
@@ -118,7 +137,13 @@ app.get('/generate-temperature-plot', (req, res) => {
 				temperatures.push.apply(temperatures, docs[idx]['temperatures']);
 			}
 			console.log(`timestamps=${timestamps.length} temperatures=${temperatures.length}`);
+			if(timestamps.length === 0) {
+				sendError(500, 'No temperature data collected yet. Please wait a while and try again.', res);
+				return;
+			}
 			var json = {
+				deviceID: deviceID,
+				utcOffset: utcOffset,
 				timestamps: timestamps,
 				temperatures: temperatures,
 			};
@@ -128,9 +153,13 @@ app.get('/generate-temperature-plot', (req, res) => {
 				body: JSON.stringify(json),
 				gzip: true,
 			}, function(err, _res, body) {
+				//console.log(JSON.stringify(_res));
 				if(err) {
 					console.log(`[temperature-plot]: Error: ${err}`);
-					res.status(500).send('' + err);
+					sendError(500, JSON.stringify(err), res);
+				} else if(_res.statusCode !== 200) {
+					console.log(`[temperature-plot]: Error: ${_res.body}`);
+					sendError(500, _res.body, res);
 				} else {
 					console.log(`[temperature-plot]: Success!`);
 					res.status(200).send(body);
@@ -157,6 +186,18 @@ app.post('/upload', function(req, res) {
 	});;
 });
 
+function post(opts) {
+	return new Promise((resolve, reject) => {
+		request.post(opts, function(err, _res, body) {
+			if(err) {
+				reject(err);
+			} else {
+				resolve(body);
+			}
+		});
+	});
+}
+
 app.get('/experiment-results', (req, res) => {
 	var deviceID = req.query.deviceID;
 	var exptID = req.query.experimentID;
@@ -182,32 +223,18 @@ app.get('/experiment-results', (req, res) => {
 			}
 			var result = JSON.parse(JSON.stringify(docs[0]));
 			delete result._id;
-			var keys = ['digits', 'startTime', 'testTimeMs', 'experimentID'];
-			testInfo = {
-				experimentID: result.experimentID,
-				digits: result.digits,
-				startTime: result.startTime,
-				testTimeMs: result.testTimeMs,
-				iterationsCompleted: result.iterations.length,
-				startTemperature: result.startTemperature,
-			};
 
-			request.post({
+			var plotInput = Object.assign(result, {deviceID: deviceID});
+
+			var exptPlotPromise = post({
 				url: 'http://localhost:10070/experiment-plot',
-				body: JSON.stringify(result),
+				body: JSON.stringify(plotInput),
 				gzip: true,
-			}, function(err, _res, body) {
-				if(err) {
-					console.log(`[experiment-plot]: Error: ${err}`);
-					res.status(500).send('' + err);
-				} else {
-					console.log(`[experiment-plot]: Success!`);
-					res.send(JSON.stringify({
-						testInfo: testInfo,
-						testScore: 'TBD',
-						testPlot: JSON.parse(body),
-					}));
-				}
+			}).then((body) => {
+				testResults = JSON.parse(body);
+				res.send(JSON.stringify(testResults));
+			}).catch((err) => {
+				res.status(500).send('' + err);
 			});
 		});
 	});
@@ -297,7 +324,8 @@ app.post('/harness-upload', function(req, res) {
 });
 
 app.post('/info', function(req, res) {
-	console.log(req.rawBody);
+	var body = req.rawBody || req.body;
+	console.log(JSON.stringify(body));
 	res.send('OK');
 });
 

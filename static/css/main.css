@@ -1,7 +1,12 @@
+html {
+  background-color: #202020;
+  color: #000;
+}
 body {
   background-color: #202020;
   color: #000;
 }
+
 
 .brand-logo {
   padding-left: 0.2em !important;
@@ -34,7 +39,7 @@ main {
     /*font-size: 0.8em;*/
     padding: 0;
     display: inline-block;
-    margin: 0 0;
+    margin: 0 0.1em 1em 0.1em;
   }
   .app-option-li a {
     font-size: 0.8em;
@@ -62,4 +67,13 @@ canvas {
 
 [ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
   display: none !important;
+}
+
+@media only screen and (max-width: 500px) {
+  h3 {
+    margin: 1rem 0;
+  }
+  #about-test-device-content {
+    margin-top: 1em !important;
+  }
 }

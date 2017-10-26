@@ -12,7 +12,7 @@ from bokeh.resources import CDN
 from bokeh.embed import file_html, components
 from bokeh.models import Range1d
 from bokeh.models.formatters import DatetimeTickFormatter
-from plot_temperature_bokeh import sanitize_data
+from plot_temperature_bokeh import sanitize_data, get_temperature_hacks
 
 import tornado.ioloop
 import tornado.web
@@ -27,21 +27,28 @@ def setup_parser():
 class TemperaturePlotHandler(tornado.web.RequestHandler):
 	def post(self):
 		data = tornado.escape.json_decode(self.request.body)
+		try:
+			x, y = sanitize_data(data)
 
-		x, y = sanitize_data(data)
+			p = figure(title='', x_axis_label='Time', y_axis_label=r'Temperature (°C)', plot_height=400, responsive=True)
+			p.line(x, y, line_width=1)
+			p.y_range = Range1d(0, 100)
+			p.xaxis.formatter = DatetimeTickFormatter(hours='%H:%M')
 
-		p = figure(title='', x_axis_label='Time', y_axis_label='Temperature', plot_height=400, responsive=True)
-		p.line(x, y, line_width=1)
-		p.y_range = Range1d(0, 100)
-		p.xaxis.formatter = DatetimeTickFormatter()
-		html = file_html(p, CDN, "test")
-		script, div = components(p)
+			p.xaxis.axis_label_text_font_style='bold'
+			p.yaxis.axis_label_text_font_style='bold'
 
-		result = {
-			'script': script,
-			'div': div,
-		}
-		self.write(json.dumps(result))
+			html = file_html(p, CDN, "test")
+			script, div = components(p)
+
+			result = {
+				'script': script,
+				'div': div,
+			}
+			self.write(json.dumps(result))
+		except Exception, e:
+			self.set_status(500)
+			self.write(str(e))
 
 class ExperimentPlotHandler(tornado.web.RequestHandler):
 	def post(self):
@@ -56,8 +63,12 @@ class ExperimentPlotHandler(tornado.web.RequestHandler):
 		p1.line(perf_x, perf_y, line_width=1)
 		p1.y_range = Range1d(0, max(perf_y)+1000.0)
 
+		p1.xaxis.axis_label_text_font_style='bold'
+		p1.yaxis.axis_label_text_font_style='bold'
+
 		p2 = figure(title='', x_axis_label='Time (s)', y_axis_label=r'Temperature (°C)', x_range=p1.x_range, plot_height=270, responsive=True)
-		timestamps, temperatures = sanitize_data(data['temperatureData'])
+
+		timestamps, temperatures = sanitize_data(data['temperatureData'], data['deviceID'])
 		# These are time since epoch..whereas the other plot is time since
 		# start of benchmark. Convert this
 		timestamps = [(x - data['startTime'])/1000.0 for x in timestamps if x >= data['startTime']]
@@ -65,16 +76,29 @@ class ExperimentPlotHandler(tornado.web.RequestHandler):
 		p2.line(timestamps, temperatures, line_width=1)
 		p2.y_range = Range1d(0, 100)
 
+		p2.xaxis.axis_label_text_font_style='bold'
+		p2.yaxis.axis_label_text_font_style='bold'
+
 		combined = gridplot(children=[[p1], [p2]], responsive=True, merge_tools=True)
 		html = file_html(combined, CDN, "test")
 		script, div = components(combined)
 
 		result = {
-			'script': script,
-			'div': div,
+			'testInfo': {
+				'experimentID': data['experimentID'],
+				'digits': data['digits'],
+				'startTime': data['startTime'],
+				'testTimeMs': data['testTimeMs'],
+				'iterationsCompleted': len(data['iterations']),
+				'startTemperature': temperatures[0],
+			},
+			'testScore': 'TBD',
+			'testPlot': {
+				'script': script,
+				'div': div,
+			},
 		}
 		self.write(json.dumps(result))
-
 
 def make_app():
 	return tornado.web.Application([

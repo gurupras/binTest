@@ -27,5 +27,18 @@
     "mongodb": "^2.2.31",
     "morgan": "^1.9.0",
     "request": "^2.81.0"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.2",
+    "babel-preset-env": "^1.6.1",
+    "gulp": "^3.9.1",
+    "gulp-babel": "^7.0.0",
+    "gulp-concat": "^2.6.1",
+    "gulp-minify": "^1.0.0",
+    "gulp-sourcemaps": "^2.6.1",
+    "html-loader": "^0.5.1",
+    "pump": "^1.0.2",
+    "webpack": "^3.8.1"
   }
 }

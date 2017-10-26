@@ -1,4 +1,5 @@
 (function() {
+  console.log(`Running testing.js`);
 
   function generateTemperatureData() {
     var hours = 1 + Math.floor((Math.random() * 0));
@@ -26,14 +27,14 @@
     getDeviceID: function() {
       //return this.stockResponse();
       return JSON.stringify({
-        "IMEI": "000000000000000",
+        "IMEI": "353626070549717", /*"000000000000000",*/
         "Settings.Secure.ANDROID_ID": "c3004cdd541bea40", /* c3004cdd541bea40 */
         "Build.PRODUCT": "generic",
-        "Build.SERIAL": "0000000000000000",
+        "Build.SERIAL": "01aff1e7b54aa0d8", /* "0000000000000000" */
         "Build.BRAND": "google",
-        "ICCID": "000000000000000",
+        "ICCID": "310260808169237", /* "000000000000000", */
         "Build.MANUFACTURER": "LGE",
-        "Build.MODEL": "Nexus 5X"
+        "Build.MODEL": "Nexus 5X" /* "Nexus 5X" */
       });
     },
     getDeviceInfo: function() {
@@ -72,7 +73,7 @@
       return;
     },
     log: function(tag, msg) {
-      console.log(`AndroidAPI: ${tag}: ${msg}`);
+      console.log('AndroidAPI: ' + tag + ': ' + msg);
     },
     systemTime: function() {
       return Date.now();
@@ -92,6 +93,9 @@
       if(window.csc) {
         clearInterval(window.csc);
       };
+    },
+    startExperiment: function() {
+
     },
     startUploadData: function() {
       return "";
@@ -131,6 +135,18 @@
       templateUrl: 'static/html/debug.html',
       controller: 'debugController',
     })
+    .when('/sweep-test', {
+      templateUrl: 'static/html/sweep-test.html',
+      controller: 'sweepTestController',
+    })
+    .when('/terms', {
+      templateUrl: 'static/html/terms_and_conditions.html',
+      controller: 'dummyController',
+    })
+    .when('/privacy', {
+      templateUrl: 'static/html/privacy_policy.html',
+      controller: 'dummyController',
+    })
     .otherwise({
       templateUrl: 'static/html/about.html',
       controller: 'aboutController',
@@ -141,8 +157,11 @@
     $rootScope.deviceID = JSON.parse(AndroidAPI.getDeviceID());
     $rootScope.deviceIDStr = JSON.stringify($rootScope.deviceID, null, 2);
     //$rootScope.deviceInfo = JSON.parse(AndroidAPI.getDeviceInfo());
+    $rootScope.testResults = [];
     $rootScope.deviceInfo = [];
     $rootScope.deviceInfoStr = '{}';
+    $rootScope.section = undefined;
+    $rootScope.navigationDisabled = false;
 
     $.ajax({
       type: 'GET',
@@ -159,22 +178,24 @@
           return;
         } else {
           $rootScope.$apply(function() {
-            var keys = Object.keys(data[0]);
-            for(var idx = 0; idx < keys.length; idx++) {
-              var key = keys[idx];
-              var value = data[0][key];
-              $rootScope.deviceInfo.push({
-                key: key,
-                value: value,
-              });
+            try {
+              var keys = Object.keys(data[0]);
+              for(var idx = 0; idx < keys.length; idx++) {
+                var key = keys[idx];
+                var value = data[0][key];
+                $rootScope.deviceInfo.push({
+                  key: key,
+                  value: value,
+                });
+              }
+            } catch(e) {
+              console.error(e && e.stack);
             }
             $rootScope.deviceInfoStr = JSON.stringify($rootScope.deviceInfo);
           });
         }
       },
     });
-
-    $rootScope.testResults = [];
 
     var $scope = $rootScope;
     $scope.sections = [
@@ -198,12 +219,33 @@
       {
         label: 'Debug',
         id: 'debug',
-        hide: 'false',
+        hide: 'true',
+      },
+      {
+        label: 'Sweep Test',
+        id: 'sweep-test',
+        hide: 'true',
       },
     ];
 
+    $scope.$on('disable-navigation', function() {
+      console.log(`navigation disabled`);
+      $scope.navigationDisabled = true;
+    });
+    $scope.$on('enable-navigation', function() {
+      console.log(`navigation re-enabled`);
+      $scope.$apply(function() {
+        $scope.navigationDisabled = false;
+      });
+    });
+
+
     $scope.section = undefined;
     $scope.changeSection = function(e) {
+      if($scope.navigationDisabled) {
+        return;
+      }
+
       var el;
       if(!e.target) {
         // This is a section-id
@@ -227,7 +269,7 @@
     $scope.$on('$viewContentLoaded', function() {
       var hash = $window.location.hash.substr(3);
       if(hash !== '') {
-        $scope.changeSection(hash);
+        //$scope.changeSection(hash);
       }
     });
 
@@ -242,6 +284,7 @@
           success: function(data) {
             $rootScope.$apply(function() {
               $rootScope.testResults = data;
+              console.log(`device-experiment-ids=${JSON.stringify(data)}`);
             });
             resolve();
           },
@@ -254,8 +297,8 @@
     $rootScope.updateTestResults();
   }]);
 
-  app.controller('indexController', ['$scope', '$window', function($scope, $window) {
-    console.log('Running indexController');
+  app.controller('testingController', ['$scope', '$window', function($scope, $window) {
+    console.log('Running testingController');
 
     $('.brand-logo').on('click touchstart', function() {
       $scope.$apply(function() {
@@ -276,15 +319,15 @@
   app.controller('deviceInfoController', ['$scope', '$window', function($scope, $window) {
     $scope.sections = [
       {
-        label: 'Basic Info',
+        label: 'Basic',
         id: 'basic-info',
       },
       {
-        label: 'Hardware Info',
+        label: 'Hardware',
         id: 'hardware-info',
       },
       {
-        label: 'Temperature Info',
+        label: 'Temperature',
         id: 'temperature-info',
         onClick: 'updateTemperaturePlot();',
       }
@@ -299,7 +342,6 @@
       $scope.subSection = el.data('id');
       var evalStr = el.data('callback');
       if(evalStr) {
-        debugger;
         $scope.$eval(evalStr);
       }
     };
@@ -311,6 +353,7 @@
     $scope.updateTemperaturePlot = function() {
       var params = {
         hours: 12,
+        utcOffset: moment().utcOffset(),
         deviceID: JSON.parse(JSON.stringify($scope.deviceID)),
       };
 
@@ -332,6 +375,12 @@
           });
         },
         error: function(e) {
+          var err = JSON.parse(e.responseText);
+          var p = $(`<p>${err.msg}</p>`);
+          p.appendTo($('#temperature-plot-div'));
+          $scope.$apply(function() {
+            $scope.loading = false;
+          });
         },
       });
     };
@@ -358,6 +407,17 @@
 
   app.controller('aboutController', ['$scope', '$window', function($scope, $window) {
     console.log('Running aboutController');
+
+    $scope.$on('$viewContentLoaded', function() {
+      $('#terms').click(() => {
+        $window.location.assign('#!/terms');
+      });
+      $('#privacy').click(() => {
+        $window.location.assign('#!/privacy');
+      });
+    });
   }]);
 
+  app.controller('dummyController', ['$scope', '$window', function($scope, $window) {
+  }]);
 })();
