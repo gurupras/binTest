@@ -93,7 +93,16 @@ app.get('/apk', (req, res) => {
 app.get('/device-description', (req, res) => {
 	var qs = req.query;
 	var deviceID = qs.deviceID;
-	fonoapi.query(deviceID['Build.MODEL']).then((result) => {
+
+	// See if this model has an alias
+	var model = deviceID['Build.MODEL'];
+	try {
+		var modelAliases = yaml.safeLoad(fs.readFileSync('model-alias.yaml', 'utf-8'));
+		model = modelAliases[model] || model;
+	} catch(e) {
+	}
+
+	fonoapi.query(model).then((result) => {
 		res.send(JSON.stringify(result));
 	}).catch((err) => {
 		console.log(JSON.stringify(err));
