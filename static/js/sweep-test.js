@@ -21,6 +21,11 @@ $(document).on('angular-ready', function(e, app) {
     $scope.temp = Number(q.temp);
     $scope.iter = Number(q.iter);
 
+    // Termination condition
+    if($scope.temp >= $scope.endTemp) {
+      window.location.href = 'about:blank';
+    }
+
     var newQ = $.extend({}, {}, q);
     if($scope.iter === $scope.numIterations-1) {
       newQ.temp = $scope.temp + $scope.step;
@@ -68,6 +73,10 @@ $(document).on('angular-ready', function(e, app) {
       }
       AndroidAPI.toast('Uploading logs');
       var testResults = $scope.test.getResult();
+
+      testResults['test-type'] = 'sweep-test';
+      testResults['ambientTemperature'] = $scope.temp;
+      testResults['sweepIteration'] = $scope.iter;
       testResults['startTemperature'] = $scope.exptStartTemp;
       testResults['cooldownData'] = cooldownData;
       var key = uploadData(JSON.stringify(testResults));
