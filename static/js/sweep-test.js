@@ -74,7 +74,7 @@ $(document).on('angular-ready', function(e, app) {
       AndroidAPI.toast('Uploading logs');
       var testResults = $scope.test.getResult();
 
-      testResults['test-type'] = 'sweep-test';
+      testResults['testType'] = 'sweep-test';
       testResults['ambientTemperature'] = $scope.temp;
       testResults['sweepIteration'] = $scope.iter;
       testResults['startTemperature'] = $scope.exptStartTemp;
@@ -105,9 +105,6 @@ $(document).on('angular-ready', function(e, app) {
         $('#test-progress').css('width', pct + '%');
       }, 2 * 1000);
 
-      var tempReading = JSON.parse(AndroidAPI.getTemperature());
-      $scope.exptStartTemp = tempReading.temperature;
-
       var systemTime = AndroidAPI.systemTime();
       var upTime = AndroidAPI.upTime();
       var jsTime = Date.now();
@@ -125,7 +122,7 @@ $(document).on('angular-ready', function(e, app) {
       }
 
       var now = new Date();
-      var filename = 'monsoon-' + now.getFullYear() + padDate(now.getMonth()) + padDate(now.getDate()) + ' ' + padDate(now.getHours()) + ':' + padDate(now.getMinutes()) + ':' + padDate(now.getSeconds()) + '.gz';
+      var filename = 'monsoon-' + exptID + '-' + now.getFullYear() + padDate(now.getMonth()) + padDate(now.getDate()) + ' ' + padDate(now.getHours()) + ':' + padDate(now.getMinutes()) + ':' + padDate(now.getSeconds()) + '.gz';
       console.log('Starting monsoon');
       AndroidAPI.startMonsoon($scope.monsoonHost, $scope.monsoonPort, JSON.stringify({
         size: 1,
@@ -139,6 +136,8 @@ $(document).on('angular-ready', function(e, app) {
       AndroidAPI.waitUntilAmbientTemperature(cpuTemperature);
 
       console.log('Running test');
+      var tempReading = JSON.parse(AndroidAPI.getTemperature());
+      $scope.exptStartTemp = tempReading.temperature;
 
       console.log(PiTest);
       $scope.test = PiTest();
