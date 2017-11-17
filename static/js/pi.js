@@ -39,6 +39,8 @@ function CalculatePi(digits)
 
 	self.postMessage({
 		'PiValue': Pi,
+		startTime: start,
+		endTime: end,
 		timeTaken: timeTaken,
 		'digits': digits,
 	});

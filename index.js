@@ -60,23 +60,24 @@ if(process.env.NODE_ENV === 'test') {
 	app.use(morgan(':x-real-ip - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"'));
 }
 
-
 function generateDeviceQuery(deviceID, extras) {
+	var $or = []
+
+	if (deviceID.ICCID) {
+		$or.push({'deviceID.ICCID': deviceID.ICCID})
+	}
+	if (deviceID.IMEI) {
+		$or.push({'deviceID.IMEI': deviceID.IMEI})
+	}
+	$or.push({'deviceID.Build>SERIAL': deviceID['Build.SERIAL']})
+
 	var basicQuery = {
-		$or: [
-			{
-				'deviceID.Settings>Secure>ANDROID_ID': deviceID['Settings.Secure.ANDROID_ID'],
-			},
-			{
-				'DeviceID.ICCID': deviceID.ICCID,
-			},
-			{
-				'DeviceID.IMEI': deviceID.IMEI,
-			},
-		],
-	};
-	Object.assign(basicQuery, extras);
-	return basicQuery;
+		$or: $or
+	}
+	var result = Object.assign(basicQuery, extras)
+	console.log(`deviceID: ${JSON.stringify(deviceID)}`)
+	console.log(`query: ${JSON.stringify(result)}`)
+	return result
 }
 
 
@@ -95,7 +96,7 @@ app.get('/device-description', (req, res) => {
 	var deviceID = qs.deviceID;
 
 	// See if this model has an alias
-	var model = deviceID['Build.MODEL'];
+	var model = deviceID['DeviceName'] || deviceID['Build.MODEL'];
 	try {
 		var modelAliases = yaml.safeLoad(fs.readFileSync('model-alias.yaml', 'utf-8'));
 		model = modelAliases[model] || model;

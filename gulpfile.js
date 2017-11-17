@@ -12,6 +12,7 @@ gulp.task('babel-js', () => {
       'static/js/debug.js',
 			'static/js/pi.js',
 			'static/js/smartphones-exposed-pi-test.js',
+			'static/js/smartphones-exposed-android-api.js',
       'static/js/test-my-device.js',
       'static/js/test-results.js',
       'static/js/sweep-test.js',

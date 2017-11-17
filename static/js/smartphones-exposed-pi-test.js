@@ -20,14 +20,29 @@ function PiTest(digits) {
   test.done = undefined;
   test.valid = true;
   test.interrupted = false;
+	test.started = 0;
   // Create workers equal to number of CPU cores
 
+	test.logParameters = function () {
+		console.log(JSON.stringify({
+			COOLDOWN_DURATION_MS: test.COOLDOWN_DURATION_MS,
+			numWebWorkers: test.numWebWorkers,
+			digits: test.digits,
+			testTimeMs: test.testTimeMs,
+			zeroTime: test.zeroTime,
+			done: test.done,
+			valid: test.valid,
+			interrupted: test.interrupted,
+			started: test.started,
+		}))
+	}
   __log('# webworkers = ' + test.numWebWorkers);
 
   test.getResult = function() {
     return {
       digits: test.digits,
       startTime: test.startTime,
+			endTime: test.endTime,
       iterations: test.results,
       testTimeMs: test.testTimeMs,
       valid: test.valid,
@@ -47,9 +62,8 @@ function PiTest(digits) {
   function addRealListener(worker) {
     worker.onmessage = function(e) {
       var data = e.data;
-      var now = Date.now();
       test.results.push({
-        ft: round((now-test.zeroTime)/1e3, 2),
+        ft: data.endTime,
         tt: round(data.timeTaken/1e3, 2)
       });
 
@@ -66,30 +80,17 @@ function PiTest(digits) {
       }
 
       // XXX: Right now, we just run the test for test.realTimeMs duration
-      if(!test.startTime) {
-        test.realEnd = Date.now();
-        test.startTime = Date.now();
-      } else {
-        if(!test.startTime || (!test.done && ((Date.now()-test.startTime) < test.testTimeMs))) {
-          test.started++;
-          //console.log('Starting another iteration');
-          worker.postMessage({
-            'cmd':   'CalculatePi',
-            'value': data.digits,
-          });
-        }
+
+			var timeElapsed = Date.now()-test.startTime
+      if(!test.done && timeElapsed < test.testTimeMs) {
+        test.started++;
+        //console.log('Starting another iteration');
+        worker.postMessage({
+          'cmd':   'CalculatePi',
+          'value': data.digits,
+        });
       }
 
-      if(test.startTime && (Date.now()-test.startTime) > test.testTimeMs) {
-        test.done = true;
-        console.log('Finishing test..remaining: ' + test.started);
-        //__log(JSON.stringify(getResult()));
-        if(test.started == 0) {
-          // This is the end of the test
-          console.log('Done!');
-          $(window).trigger('test-finished');
-        }
-      }
       // Signal that one real worker is done
       $(test.workers).trigger('worker-done', [e.data, worker]);
     };
@@ -158,6 +159,26 @@ function PiTest(digits) {
         value: test.digits,
       });
     }
+
+		var interval = setInterval(function () {
+			var now = Date.now()
+			var timeElapsed = now - test.startTime
+			if(timeElapsed > test.testTimeMs) {
+				// console.log(`timeElapsed(${timeElapsed}) >  test.testTimeMs(${test.testTimeMs})`)
+        test.done = true;
+				test.endTime = Date.now()
+        console.log('Finishing test..remaining: ' + test.started);
+        //__log(JSON.stringify(getResult()));
+				for(var idx = 0; idx < test.workers.length; idx++) {
+					var w = test.workers[idx];
+					w.terminate();
+				}
+        // This is the end of the test
+        console.log('Done!');
+        $(window).trigger('test-finished');
+				clearInterval(interval)
+      }
+		}, 300)
   }
 
   test.interrupt = function() {
