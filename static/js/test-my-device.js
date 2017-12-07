@@ -122,6 +122,7 @@ $(document).on('angular-ready', function (e, app) {
           doCooldown()
           AndroidAPI.toast('Uploading logs')
           var testResults = $scope.test.getResult()
+          console.log(`iterations: ${testResults.iterations.length}`)
           testResults['startTemperature'] = startTemp
           testResults['cooldownData'] = $scope.cooldownData
           var key = uploadData(JSON.stringify(testResults))
@@ -140,7 +141,17 @@ $(document).on('angular-ready', function (e, app) {
 
         var tempReading = JSON.parse(AndroidAPI.getTemperature())
         $scope.exptStartTemp = tempReading.temperature
-        $scope.test.run()
+
+        if ($scope.native) {
+          $scope.test.startTime = Date.now()
+          var resultsStr = AndroidAPI.runWorkloadPi(15000, $scope.test.testTimeMs)
+          $scope.test.endTime = Date.now()
+          var results = JSON.parse(resultsStr)
+          $scope.test.results = results
+          $(window).trigger('test-finished')
+        } else {
+          $scope.test.run()
+        }
       }
 
       $scope.interruptTest = function () {

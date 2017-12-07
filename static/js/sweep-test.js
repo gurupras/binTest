@@ -10,11 +10,16 @@ $(document).on('angular-ready', function (e, app) {
     // Start experiment to acquire wakelock
     var exptID = AndroidAPI.startExperiment()
 
-    $scope.monsoonHost = '192.168.1.198'
+    $scope.monsoonHost = '192.168.2.178'
     $scope.monsoonPort = 20400
 
+    $scope.native = false
+    $scope.debug = false
+
+    $scope.WARMUP_DURATION = $scope.debug ? 10 * 1000 : 60 * 1000
+
     $scope.workloadDurationMinutes = 7
-    $scope.cooldownDurationMinutes = 5
+    $scope.cooldownDurationMinutes = 10
 
     var uri = URI(window.location.href)
     var q = uri.query(true)
@@ -43,6 +48,14 @@ $(document).on('angular-ready', function (e, app) {
       currentURL: uri.toString(),
       newURL: newURL.toString()
     }))
+
+    function getDesiredCPUTemperature () {
+      if ($scope.debug) {
+        return $scope.temp + 40
+      } else {
+        return $scope.temp + 10
+      }
+    }
 
     function doCooldown () {
       try {
@@ -81,7 +94,7 @@ $(document).on('angular-ready', function (e, app) {
       AndroidAPI.toast('Uploading logs')
       var testResults = $scope.test.getResult()
 
-      testResults['testType'] = 'sweep-test'
+      testResults['testType'] = 'tengine-study'
       testResults['ambientTemperature'] = $scope.temp
       testResults['sweepIteration'] = $scope.iter
       testResults['startTemperature'] = $scope.exptStartTemp
@@ -123,7 +136,7 @@ $(document).on('angular-ready', function (e, app) {
         jsTime: jsTime
       }
 
-      var cpuTemperature = $scope.temp + 10
+      var cpuTemperature = getDesiredCPUTemperature()
 
       function padDate (val) {
         return ('0' + val).slice(-2)
@@ -136,17 +149,33 @@ $(document).on('angular-ready', function (e, app) {
         size: 1,
         filepath: '/home/guru/workspace/smartphones.exposed/logs/' + filename
       }))
-      console.log('Running powersync')
-      AndroidAPI.runPowerSync()
+      if (!$scope.debug) {
+        console.log('Running powersync')
+        AndroidAPI.runPowerSync()
+      }
+
+      console.log(`Warming up device a little bit ...`)
+      AndroidAPI.warmup($scope.WARMUP_DURATION)
 
       // Set temperature
       console.log(`Waiting for phone temperature: ${cpuTemperature}`)
-      AndroidAPI.waitUntilAmbientTemperature(cpuTemperature)
+      AndroidAPI.waitUntilAmbientTemperature(cpuTemperature, 'http://sweeptest.smartphone.exposed/info')
+
+      AndroidAPI.post('http://sweeptest.smartphone.exposed/info', JSON.stringify({msg: `Starting experiment`}))
 
       var tempReading = JSON.parse(AndroidAPI.getTemperature())
       $scope.exptStartTemp = tempReading.temperature
 
-      $scope.test.run()
+      if ($scope.native) {
+        var resultsStr = AndroidAPI.runOrigWorkloadPi(0, $scope.test.testTimeMs, "")
+        var results = JSON.parse(resultsStr)
+        $scope.test.startTime = results.startTime
+        $scope.test.endTime = results.endTime
+        $scope.test.results = results.iterations
+        $(window).trigger('test-finished')
+      } else {
+        $scope.test.run()
+      }
     }
 
     $scope.$on('$viewContentLoaded', function () {

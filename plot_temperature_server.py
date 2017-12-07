@@ -71,7 +71,7 @@ class ExperimentPlotHandler(tornado.web.RequestHandler):
 		timestamps, temperatures = sanitize_data(data['temperatureData'], data['deviceID'])
 		# These are time since epoch..whereas the other plot is time since
 		# start of benchmark. Convert this
-		timestamps = [(x - data['startTime'])/1000.0 for x in timestamps if x >= data['startTime']]
+		#timestamps = [(x - data['startTime'])/1000.0 for x in timestamps if x >= data['startTime']]
 
 		p2.line(timestamps, temperatures, line_width=1)
 		p2.y_range = Range1d(0, 100)
@@ -90,7 +90,7 @@ class ExperimentPlotHandler(tornado.web.RequestHandler):
 				'startTime': data['startTime'],
 				'testTimeMs': data['testTimeMs'],
 				'iterationsCompleted': len(data['iterations']),
-				'startTemperature': temperatures[0],
+				'startTemperature': data['startTemperature'],
 			},
 			'testScore': 'TBD',
 			'testPlot': {

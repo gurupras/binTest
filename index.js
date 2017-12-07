@@ -69,10 +69,13 @@ function generateDeviceQuery(deviceID, extras) {
 	if (deviceID.IMEI) {
 		$or.push({'deviceID.IMEI': deviceID.IMEI})
 	}
-	$or.push({'deviceID.Build>SERIAL': deviceID['Build.SERIAL']})
+	if (deviceID['Build.SERIAL']) {
+		$or.push({'deviceID.Build>SERIAL': deviceID['Build.SERIAL']})
+	}
 
-	var basicQuery = {
-		$or: $or
+	var basicQuery = {}
+	if ($or.length > 0) {
+		basicQuery.$or = $or
 	}
 	var result = Object.assign(basicQuery, extras)
 	console.log(`deviceID: ${JSON.stringify(deviceID)}`)
@@ -179,6 +182,7 @@ app.get('/generate-temperature-plot', (req, res) => {
 	});
 });
 
+var lastExptUploadTime
 app.post('/upload', function(req, res) {
 	console.log(`Received upload POST: type=${req.body.type}`);
 	var json = req.body;
@@ -187,6 +191,9 @@ app.post('/upload', function(req, res) {
 		console.log(`Invalid data type: ${json.type}! Valid types: ${JSON.stringify(config.upload_types)}`);
 		res.status(400).send('Invalid data type');
 		return;
+	}
+	if (json.type === 'expt-data') {
+		lastExptUploadTime = moment().local().format()
 	}
 	// TODO: Check for fields
 	mongo.insertDocument(json).then((result) => {
@@ -212,7 +219,7 @@ app.get('/experiment-results', (req, res) => {
 	var deviceID = req.query.deviceID;
 	var exptID = req.query.experimentID;
 
-	var mongoDBQuery = generateDeviceQuery(deviceID, {
+	var mongoDBQuery = generateDeviceQuery({}, {
 		type: 'expt-data',
 		experimentID: exptID,
 	});
@@ -225,7 +232,9 @@ app.get('/experiment-results', (req, res) => {
 			}
 			// TODO: Format test data into 3 components
 			// testInfo, testScore and testPlot and send it back
+			console.log(`docs.length=${docs.length}`);
 			if(docs.length === 0) {
+				console.log(`ExperimentID: ${exptID} not found!`);
 				res.send(JSON.stringify({
 					error: 'Test not found. If you just completed the experiment, retry in some time as the logs may not have been uploaded yet',
 				}));
@@ -237,7 +246,7 @@ app.get('/experiment-results', (req, res) => {
 			var plotInput = Object.assign(result, {deviceID: deviceID});
 
 			var exptPlotPromise = post({
-				url: 'http://localhost:10070/experiment-plot',
+				url: 'http://lastInfoTimelocalhost:10070/experiment-plot',
 				body: JSON.stringify(plotInput),
 				gzip: true,
 			}).then((body) => {
@@ -333,12 +342,20 @@ app.post('/harness-upload', function(req, res) {
 	res.send('OK');
 });
 
+var lastInfoTime;
 app.post('/info', function(req, res) {
+	lastInfoTime = moment().local().format();
 	var body = req.rawBody || req.body;
 	console.log(JSON.stringify(body));
 	res.send('OK');
 });
 
+app.get('/last-info', function (req, res) {
+	res.send(lastInfoTime)
+})
+app.get('/last-expt-upload', function (req, res) {
+	res.send(lastExptUploadTime)
+})
 app.post('/raw-data', function(req, res) {
 	// Anything uploaded to raw-data gets appended to the next uploaded file
 	console.log('Got raw-data');
