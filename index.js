@@ -246,12 +246,25 @@ app.get('/experiment-results', (req, res) => {
 			var plotInput = Object.assign(result, {deviceID: deviceID});
 
 			var exptPlotPromise = post({
-				url: 'http://lastInfoTimelocalhost:10070/experiment-plot',
+				url: 'http://localhost:10070/experiment-plot',
 				body: JSON.stringify(plotInput),
 				gzip: true,
-			}).then((body) => {
-				testResults = JSON.parse(body);
-				res.send(JSON.stringify(testResults));
+			})
+
+			var exptRankingPromise = post({
+				url: 'http://localhost:10070/experiment-ranking',
+				body: JSON.stringify({
+					experimentID: exptID
+				}),
+				gzip: true
+			})
+
+			exptPlotPromise.then((body) => {
+				const testResults = JSON.parse(body);
+				exptRankingPromise.then((rankingResult) => {
+					testResults['rank'] = rankingResult
+					res.send(JSON.stringify(testResults));
+				})
 			}).catch((err) => {
 				res.status(500).send('' + err);
 			});
@@ -298,6 +311,33 @@ app.get('/device-rank', function(req, res) {
 		}
 	});
 });
+
+var lastThermaboxSetLimits
+var thermaboxLimits
+app.post('/thermabox-set-limits', function (req, res) {
+	var body = req.body
+	thermaboxLimits = body
+	console.log(JSON.stringify(`thermaboxLimits=${JSON.stringify(thermaboxLimits)}`))
+	lastThermaboxSetLimits = Date.now()
+	res.send('OK')
+})
+app.get('/thermabox-last-temperature', function (req, res) {
+	var now = Date.now()
+	if (now - lastThermaboxSetLimits < 4 * 60 * 60 * 1000) {
+		res.send(`${thermaboxLimits.temperature}`)
+	} else {
+		res.send('')
+	}
+})
+app.get('/thermabox-last-threshold', function (req, res) {
+	var now = Date.now()
+	if (now - lastThermaboxSetLimits < 4 * 60 * 60 * 1000) {
+		res.send(`${thermaboxLimits.threshold}`)
+	} else {
+		res.send('')
+	}
+})
+
 app.get('/pi-test', function (req, res) {
 	res.send(fs.readFileSync(__dirname + '/static/html/pi-test.html', 'utf-8'));
 });
@@ -309,6 +349,10 @@ app.get('/pi-test-auto', function (req, res) {
 app.get('/sweep-cooldown', function (req, res) {
 	res.send(fs.readFileSync(__dirname + '/static/html/sweep-cooldown.html', 'utf-8'));
 });
+
+app.get('/canvas-test', function (req, res) {
+	res.send(fs.readFileSync(__dirname + '/static/html/canvas-test.html', 'utf-8'))
+})
 
 
 var rawData = [];

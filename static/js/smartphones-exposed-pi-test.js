@@ -46,6 +46,8 @@ function PiTest(digits) {
       endTime: test.endTime,
       iterations: test.results,
       testTimeMs: test.testTimeMs,
+      cooldownDuration: test.COOLDOWN_DURATION_MS,
+      numWebWorkers: test.numWebWorkers,
       valid: test.valid,
     };
   };
@@ -78,9 +80,17 @@ function PiTest(digits) {
 			}
 
       if (test.interrupted) {
-        if (test.started === 0) {
-          // Interrupt is complete
-					// FIXME: This wont work if shouldLoop is true
+        if (test.shouldLoop) {
+          if (test.started === 0) {
+            // Interrupt is complete
+            // FIXME: This wont work if shouldLoop is true
+            $(window).trigger('interrupt-finished');
+          }
+        } else {
+          for (var idx = 0; idx < test.workers.length; idx++) {
+            var w = test.workers[idx];
+            w.terminate();
+          }
           $(window).trigger('interrupt-finished');
         }
         // Test is interrupted. Just return

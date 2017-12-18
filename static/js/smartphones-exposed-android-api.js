@@ -1,3 +1,22 @@
+(function () {
+  function concat () {
+    var args = Array.prototype.slice.call(arguments);
+    for (var idx = 0; idx < args.length; idx++) {
+      if (args[idx] !== null && typeof args[idx] === 'object') {
+        args[idx] = JSON.stringify(args[idx])
+      }
+    }
+    return args.join(' ')
+  }
+
+  var old = console.log
+  console.log = function () {
+    var str = concat.apply(this, arguments)
+    // AndroidAPI.log('chromium', `[INFO:CONSOLE(43)] "${str}", source: undefined (43)`)
+    old.apply(this, arguments)
+  }
+})()
+
 window.AndroidAPI = window.AndroidAPI || {
   stockResponse: function() {
     return new Error('Please install the smartphones.exposed app from the PlayStore');

@@ -18,6 +18,7 @@ import tornado.ioloop
 import tornado.web
 from tornado.httpserver import HTTPServer
 
+from processing import pymongo_helper, ranking_algorithm
 
 def setup_parser():
 	parser = argparse.ArgumentParser()
@@ -92,7 +93,6 @@ class ExperimentPlotHandler(tornado.web.RequestHandler):
 				'iterationsCompleted': len(data['iterations']),
 				'startTemperature': data['startTemperature'],
 			},
-			'testScore': 'TBD',
 			'testPlot': {
 				'script': script,
 				'div': div,
@@ -100,10 +100,25 @@ class ExperimentPlotHandler(tornado.web.RequestHandler):
 		}
 		self.write(json.dumps(result))
 
+class ExperimentRankingHandler(tornado.web.RequestHandler):
+	def post(self):
+		data = tornado.escape.json_decode(self.request.body)
+		expt_id = data['experimentID']
+
+		try:
+			rank, values = ranking_algorithm.rank(expt_id, 2, 2, use_aggregate_score=False, aggregate_by_device=False)
+			self.write('Your device ranks %.2f percentile compared to other devices of the same model' % (rank))
+		except Exception, e:
+			self.write('Failed to rank devices: {}'.format(e))
+
+
+
+
 def make_app():
 	return tornado.web.Application([
 		(r"/temperature-plot", TemperaturePlotHandler),
 		(r"/experiment-plot", ExperimentPlotHandler),
+		(r"/experiment-ranking", ExperimentRankingHandler),
 	])
 
 def main(argv):

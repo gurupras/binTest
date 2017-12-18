@@ -1,5 +1,5 @@
 (function () {
-  const THERMABOX_ADDR = '192.168.2.113'
+  const THERMABOX_ADDR = '192.168.2.206'
   window.thermabox = {
     setLimits: function (temp, threshold, cb) {
       $.post(`http://${THERMABOX_ADDR}:8080/set-limits`, {

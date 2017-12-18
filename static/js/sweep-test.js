@@ -1,8 +1,5 @@
 /* eslint-env jquery */
 // TODO: Fix this to work with arguments
-// console.log = function (str) {
-//   AndroidAPI.log('chromium', `[INFO:CONSOLE(43)] "${str}", source: undefined (43)`)
-// }
 
 $(document).on('angular-ready', function (e, app) {
   app.controller('sweepTestController', ['$scope', '$window', function ($scope, $window) {
@@ -15,10 +12,12 @@ $(document).on('angular-ready', function (e, app) {
 
     $scope.native = false
     $scope.debug = false
+    $scope.shouldRunWarmExpt = false
+    $scope.cooldownFirst = true
 
-    $scope.WARMUP_DURATION = $scope.debug ? 10 * 1000 : 60 * 1000
+    $scope.WARMUP_DURATION = $scope.debug ? 10 * 1000 : 3 * 60 * 1000
 
-    $scope.workloadDurationMinutes = 7
+    $scope.workloadDurationMinutes = 5
     $scope.cooldownDurationMinutes = 10
 
     var uri = URI(window.location.href)
@@ -88,17 +87,21 @@ $(document).on('angular-ready', function (e, app) {
       return key
     }
 
-    $(window).on('test-finished', function () {
-      doCooldown()
+    $(window).one('test-finished', function () {
+      if (!$scope.cooldownFirst) {
+        doCooldown()
+      }
 
       AndroidAPI.toast('Uploading logs')
       var testResults = $scope.test.getResult()
 
-      testResults['testType'] = 'tengine-study'
+      testResults['testType'] = 'sweep-test-v4'
+      testResults['warmupDuration'] = $scope.WARMUP_DURATION
       testResults['ambientTemperature'] = $scope.temp
       testResults['sweepIteration'] = $scope.iter
       testResults['startTemperature'] = $scope.exptStartTemp
       testResults['cooldownData'] = $scope.cooldownData
+      testResults['endTemperature'] = $scope.cooldownData.last.tempAfterSleep
       var key = uploadData(JSON.stringify(testResults))
       AndroidAPI.uploadExperimentData('http://sweeptest.smartphone.exposed/', 'upload-expt-data', key)
       $scope.$root.testResults.push(exptID)
@@ -107,9 +110,23 @@ $(document).on('angular-ready', function (e, app) {
       clearInterval($scope.progressInterval)
       $('#test-progress').css('width', '0%')
       // Enable navigation
-      $scope.$root.$broadcast('enable-navigation')
-      AndroidAPI.stopMonsoon($scope.monsoonHost, $scope.monsoonPort)
-      AndroidAPI.setURL(newURL.toString())
+      if ($scope.shouldRunWarmExpt) {
+        $(window).one('results-handled', function () {
+          AndroidAPI.stopMonsoon($scope.monsoonHost, $scope.monsoonPort)
+          AndroidAPI.setURL(newURL.toString())
+        })
+        console.log('Running warm test ...')
+        runTest($scope, true, {
+          testType: 'sweep-test-warm',
+          ambientTemperature: $scope.temp,
+          sweepIteration: $scope.iter,
+          origExperimentID: exptID
+        })
+      } else {
+        $scope.$root.$broadcast('enable-navigation')
+        AndroidAPI.stopMonsoon($scope.monsoonHost, $scope.monsoonPort)
+        AndroidAPI.setURL(newURL.toString())
+      }
     })
 
     $scope.startTest = function () {
@@ -158,8 +175,12 @@ $(document).on('angular-ready', function (e, app) {
       AndroidAPI.warmup($scope.WARMUP_DURATION)
 
       // Set temperature
-      console.log(`Waiting for phone temperature: ${cpuTemperature}`)
-      AndroidAPI.waitUntilAmbientTemperature(cpuTemperature, 'http://sweeptest.smartphone.exposed/info')
+      if (!$scope.cooldownFirst) {
+        console.log(`Waiting for phone temperature: ${cpuTemperature}`)
+        AndroidAPI.waitUntilAmbientTemperature(cpuTemperature, 'http://sweeptest.smartphone.exposed/info')
+      } else {
+        doCooldown()
+      }
 
       AndroidAPI.post('http://sweeptest.smartphone.exposed/info', JSON.stringify({msg: `Starting experiment`}))
 
@@ -185,9 +206,10 @@ $(document).on('angular-ready', function (e, app) {
       })
 
       // Setup thermabox
-      function checkStability () {
+      function checkStability (updatedLimits) {
         var stableStart
         var lastLogTime = Date.now()
+        const stablePeriod = updatedLimits ? 3 * 60 * 1000 : 30 * 1000
         var interval = setInterval(function () {
           thermabox.getState(function (state) {
             console.log('Thermabox: state=' + state)
@@ -200,7 +222,7 @@ $(document).on('angular-ready', function (e, app) {
                 stableStart = Date.now()
               } else {
                 var now = Date.now()
-                if ((now - stableStart) > 30 * 1000) {
+                if ((now - stableStart) > stablePeriod) {
                   clearInterval(interval)
                   $(document).trigger('thermabox-stable')
                 }
@@ -226,7 +248,9 @@ $(document).on('angular-ready', function (e, app) {
           console.log('Setting limits: ' + JSON.stringify(limits))
           thermabox.setLimits($scope.temp, 0.5, function () {
             // Start checking after 1s
-            setTimeout(checkStability, 1000)
+            setTimeout(function () {
+              checkStability(true)
+            }, 1000)
           })
         } else {
           checkStability()
