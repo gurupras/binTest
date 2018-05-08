@@ -22,11 +22,18 @@
               </p>
             </div>
           </div>
+          <div class="row" v-if="isFake">
+            <div class="col s12 offset-m3 m6">
+              You can install the app from the
+              <a href="https://play.google.com/store/apps/details?id=edu.buffalo.cse.phonelab.smartphonesexposed">
+                PlayStore
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
-
 </template>
 
 <script>
