@@ -48,10 +48,18 @@
                   </p>
                 </div>
                 <div v-else>
-                  <p> Your device ranks at {{testRank.rank}} percentile </p>
-                  <p> We compared your device against {{testRank.numDevices}} other <b>{{fullDeviceName}}</b>s
-                    across <b>{{testRank.numExperiments}}</b> experiments
-                  </p>
+                  <!-- We have some data for testRank -->
+                  <div v-if="testRank.error">
+                    <!-- Server reported an error while computing rank -->
+                    <p> Server could not compute your device's rank</p>
+                    <p> <vue-markdown>{{getHumanErrorMessage(testRank.error)}}</vue-markdown> </p>
+                  </div>
+                  <div v-else>
+                    <p> Your device ranks at {{testRank.rank}} percentile </p>
+                    <p> We compared your device against {{testRank.numDevices}} other <b>{{fullDeviceName}}</b>s
+                      across <b>{{testRank.numExperiments}}</b> experiments
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -75,6 +83,8 @@
 
 <script>
 import { mapGetters, mapActions } from 'vuex'
+import VueMarkdown from 'vue-markdown'
+
 import ExperimentPlot from '@/components/plots/experiment-plot'
 import TemperaturePlot from '@/components/plots/temperature-plot'
 import TemperatureMixin from '@/components/plots/temperature-mixin'
@@ -84,7 +94,8 @@ export default {
   name: 'test-results',
   components: {
     TemperaturePlot,
-    ExperimentPlot
+    ExperimentPlot,
+    VueMarkdown
   },
   mixins: [TemperatureMixin],
   computed: {
@@ -201,6 +212,14 @@ export default {
     initializeSelect () {
       const selectEl = this.$el.querySelector('select')
       window.M.FormSelect.init(selectEl)
+    },
+    getHumanErrorMessage (err) {
+      switch (err.error_code) {
+        case 'NOT_ENOUGH_DATA':
+          return `Server does not have sufficient data to rank devices of the model __${this.fullDeviceName}__`
+        case 'UNKNOWN':
+          return `Server encountered an unexpected error: ${err.message}`
+      }
     }
   },
   beforeMount () {
