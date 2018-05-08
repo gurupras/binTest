@@ -75,7 +75,7 @@ export default {
         }
       ],
       native: false,
-      debug: AndroidAPI.isFake || true,
+      debug: AndroidAPI.isFake || false,
       cooldownFirst: true,
       callbackCode: undefined,
       test: undefined,
