@@ -236,7 +236,6 @@ export default {
     },
     startExperiment () {
       AndroidAPI.log('webview', 'Received start-experiment')
-      debugger
       console.log('Running test')
 
       // Since this may occur asynchronously, check if interrupted
