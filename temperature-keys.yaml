@@ -5,6 +5,8 @@ Nexus 5X:
 Nexus 6P:
   sensor: tsens_tz_sensor7
 
+Nexus 5:
+  sensor: tsens_tz_sensor7
+
 ONEPLUS A3000:
-  
   op: '{{val}}/10.0'

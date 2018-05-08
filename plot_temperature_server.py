@@ -25,6 +25,21 @@ def setup_parser():
 	parser.add_argument('--port', '-p', type=int, default=10070, help='Port to listen on')
 	return parser
 
+class SanitizeTemperaturesHandler(tornado.web.RequestHandler):
+	def post(self):
+		data = tornado.escape.json_decode(self.request.body)
+		# import ipdb; ipdb.set_trace()
+		try:
+			x, y = sanitize_data(data)
+			self.write(json.dumps({
+				'timestamps': x,
+				'temperatures': y
+			}))
+		except Exception, e:
+			print 'Encountered error: {}'.format(e)
+			self.set_status(500)
+			self.write(str(e))
+
 class TemperaturePlotHandler(tornado.web.RequestHandler):
 	def post(self):
 		data = tornado.escape.json_decode(self.request.body)
@@ -103,13 +118,43 @@ class ExperimentPlotHandler(tornado.web.RequestHandler):
 class ExperimentRankingHandler(tornado.web.RequestHandler):
 	def post(self):
 		data = tornado.escape.json_decode(self.request.body)
+		device_id = data['deviceID']
 		expt_id = data['experimentID']
-
 		try:
-			rank, values = ranking_algorithm.rank(expt_id, 2, 2, use_aggregate_score=False, aggregate_by_device=False)
-			self.write('Your device ranks %.2f percentile compared to other devices of the same model' % (rank))
+			filters = {
+				'$or': []
+			}
+			if device_id.get('ICCID', None):
+				filters['$or'].append({
+					'deviceID.ICCID': {
+						'$ne': str(device_id['ICCID']),
+					}
+				})
+			if device_id.get('IMEI', None):
+				filters['$or'].append({
+					'deviceID.IMEI': {
+						'$ne': str(device_id['IMEI']),
+					}
+				})
+			filters['$or'].append({
+				'deviceID.Build>SERIAL': {
+					'$ne': str(device_id['Build.SERIAL'])
+				}
+			})
+
+			rank, values, experiment_ids, num_devices = ranking_algorithm.rank(expt_id, 1, filters, True, False, False, False)
+			print 'Experiment={} rank={}'.format(expt_id, rank)
+			self.write(json.dumps({
+        'rank': rank,
+        'numDevices': num_devices,
+        'numExperiments': len(experiment_ids),
+      }))
 		except Exception, e:
-			self.write('Failed to rank devices: {}'.format(e))
+			print e
+			self.set_status(500)
+			self.write(json.dumps({
+        'error': json.loads(str(e))
+      }))
 
 
 
@@ -119,6 +164,7 @@ def make_app():
 		(r"/temperature-plot", TemperaturePlotHandler),
 		(r"/experiment-plot", ExperimentPlotHandler),
 		(r"/experiment-ranking", ExperimentRankingHandler),
+		(r"/sanitize-temperatures", SanitizeTemperaturesHandler),
 	])
 
 def main(argv):

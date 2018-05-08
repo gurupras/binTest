@@ -18,7 +18,7 @@ $(document).on('angular-ready', function (e, app) {
     $scope.WARMUP_DURATION = $scope.debug ? 10 * 1000 : 3 * 60 * 1000
 
     $scope.workloadDurationMinutes = 5
-    $scope.cooldownDurationMinutes = 10
+    $scope.cooldownDurationMinutes = $scope.debug ? 0.3 : 20
 
     var uri = URI(window.location.href)
     var q = uri.query(true)
@@ -95,7 +95,7 @@ $(document).on('angular-ready', function (e, app) {
       AndroidAPI.toast('Uploading logs')
       var testResults = $scope.test.getResult()
 
-      testResults['testType'] = 'sweep-test-v4'
+      testResults['testType'] = 'sweep-test-v6'
       testResults['warmupDuration'] = $scope.WARMUP_DURATION
       testResults['ambientTemperature'] = $scope.temp
       testResults['sweepIteration'] = $scope.iter
@@ -188,12 +188,16 @@ $(document).on('angular-ready', function (e, app) {
       $scope.exptStartTemp = tempReading.temperature
 
       if ($scope.native) {
-        var resultsStr = AndroidAPI.runOrigWorkloadPi(0, $scope.test.testTimeMs, "")
-        var results = JSON.parse(resultsStr)
-        $scope.test.startTime = results.startTime
-        $scope.test.endTime = results.endTime
-        $scope.test.results = results.iterations
-        $(window).trigger('test-finished')
+        $(window).one('native-test-finished', function () {
+          // Get result from globals
+          var resultsStr = AndroidAPI.getGlobal('experiment-' + exptID)
+          var results = JSON.parse(resultsStr)
+          $scope.test.startTime = results.startTime
+          $scope.test.endTime = results.endTime
+          $scope.test.results = results.iterations
+          $(window).trigger('test-finished')
+        })
+        AndroidAPI.runOrigWorkloadPi(0, $scope.test.testTimeMs, "$(window).trigger('native-test-finished')")
       } else {
         $scope.test.run()
       }

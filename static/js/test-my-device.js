@@ -1,6 +1,31 @@
 $(document).on('angular-ready', function (e, app) {
   app.controller('testMyDeviceController', ['$scope', '$window', function ($scope, $window) {
     console.log('Running testMyDeviceController')
+    $scope.logs = ['Initialized']
+
+    $scope.native = false
+    $scope.debug = false
+    $scope.cooldownFirst = true
+
+    $scope.warmupDurationMinutes = $scope.debug ? 0.1 : 3
+    $scope.workloadDurationMinutes = $scope.debug ? 0.3 : 5
+    $scope.cooldownDurationMinutes = $scope.debug ? 0.3 : 10
+
+    $scope.WARMUP_DURATION = $scope.warmupDurationMinutes * 60 * 1000
+
+    $scope.callbackCode = AndroidAPI.addChargeStateCallback(`(function() {
+      var $scope = angular.element($('#test-prerequisites')[0]).scope();
+      $scope.$apply(function() {
+        $scope.checkRequisites();
+      });
+    })()
+    `)
+
+    $scope.$on('$destroy', function () {
+      if ($scope.callbackCode) {
+        AndroidAPI.removeChargeStateCallback($scope.callbackCode)
+      }
+    })
 
     addRequirements($scope)
     $scope.checkRequisites()
@@ -45,8 +70,14 @@ function addRequirements ($scope) {
 
 function runTest ($scope, externalCall, appendToResult) {
   console.log(`Called runTest ...`)
-  $scope.workloadDurationMinutes = 5
-  $scope.cooldownDurationMinutes = 10
+  $scope.logs.length = 1
+
+  if (!AndroidAPI.isDozeDisabled()) {
+    AndroidAPI.showDozeDialog("Android Doze is known to cause problems with our tests. Please disable Android Doze to run tests.")
+    return
+  }
+
+  $scope.runningTest = true
 
   if (!$scope.requirements) {
     addRequirements($scope)
@@ -76,7 +107,10 @@ function runTest ($scope, externalCall, appendToResult) {
 
   function doCooldown () {
     try {
-      console.log('test finished. Attempting cooldown ...')
+      console.log('Attempting cooldown ...')
+      $scope.$apply(() => {
+        $scope.logs.push('Running cooldown')
+      })
       $scope.cooldownData = JSON.parse(AndroidAPI.sleepForDuration($scope.test.getTestObj().COOLDOWN_DURATION_MS))
     } catch (e) {
       console.log('Failed cooldown: ' + e)
@@ -84,7 +118,7 @@ function runTest ($scope, externalCall, appendToResult) {
   }
 
   function clear () {
-    $scope.runningTest = undefined
+    // $scope.runningTest = undefined
     $scope.test = undefined
     $scope.interrupting = undefined
     $scope.testResults = ''
@@ -92,13 +126,6 @@ function runTest ($scope, externalCall, appendToResult) {
   clear()
 
   $scope.checkRequisites()
-
-  $scope.callbackCode = AndroidAPI.addChargeStateCallback(`
-    var $scope = angular.element($('#test-prerequisites')[0]).scope();
-    $scope.$apply(function() {
-      $scope.checkRequisites();
-    });
-  `)
 
   $scope.$on('$destroy', function () {
     if ($scope.runningTest) {
@@ -114,7 +141,7 @@ function runTest ($scope, externalCall, appendToResult) {
     // Disable navigation
     $scope.$root.$broadcast('disable-navigation')
     var start = Date.now()
-    var totalMs = ($scope.workloadDurationMinutes + $scope.cooldownDurationMinutes) * 60 * 1000
+    var totalMs = $scope.WARMUP_DURATION + ($scope.workloadDurationMinutes + $scope.cooldownDurationMinutes) * 60 * 1000
     $scope.progressInterval = setInterval(function () {
       var now = Date.now()
       var pct = ((now - start) / totalMs) * 100
@@ -123,32 +150,37 @@ function runTest ($scope, externalCall, appendToResult) {
 
     $scope.checkRequisites()
     var exptID = AndroidAPI.startExperiment()
-
-    var tempReading = JSON.parse(AndroidAPI.getTemperature())
-    var startTemp = tempReading.temperature
-
-    var systemTime = AndroidAPI.systemTime()
-    var upTime = AndroidAPI.upTime()
-    var jsTime = Date.now()
-    var timeDict = {
-      systemTime: systemTime,
-      upTime: upTime,
-      jsTime: jsTime
-    }
-
-    console.log('Running test')
+    $scope.$apply(() => {
+      $scope.logs.push(`Experiment ID: ${exptID}`)
+    })
 
     $(window).one('test-finished', function () {
-      doCooldown()
+      if (!$scope.cooldownFirst) {
+        doCooldown()
+      }
+
       AndroidAPI.toast('Uploading logs')
       var testResults = $scope.test.getResult()
-      console.log(`iterations: ${testResults.iterations.length}`)
-      testResults['startTemperature'] = startTemp
+
+      testResults['testType'] = 'test-device-v1'
+      testResults['warmupDuration'] = $scope.WARMUP_DURATION
+      testResults['ambientTemperature'] = $scope.temp
+      testResults['sweepIteration'] = $scope.iter
+      testResults['startTemperature'] = $scope.exptStartTemp
       testResults['cooldownData'] = $scope.cooldownData
       testResults['endTemperature'] = $scope.cooldownData.last.tempAfterSleep
-      testResults = $.extend(testResults, appendToResult)
+      // XXX: --- hack ---
+      testResults['cooldownDuration'] = 10 * 60 * 1000
+      testResults['testTimeMs'] = 5 * 60 * 1000
+      // XXX: --- hack ---
+      testResults['properties'] = {
+        native: $scope.native,
+        debug: $scope.debug,
+        cooldownFirst: $scope.cooldownFirst
+      }
+
       var key = uploadData(JSON.stringify(testResults))
-      AndroidAPI.uploadExperimentData('https://smartphone.exposed', 'upload-expt-data', key)
+      AndroidAPI.uploadExperimentData('http://sweeptest.smartphone.exposed/', 'upload-expt-data', key)
       $scope.$root.testResults.push(exptID)
 
       // Cleanup
@@ -166,38 +198,61 @@ function runTest ($scope, externalCall, appendToResult) {
       }
     })
 
-    var tempReading = JSON.parse(AndroidAPI.getTemperature())
-    $scope.exptStartTemp = tempReading.temperature
+    $(window).on('start-experiment', function () {
+      AndroidAPI.log('webview', 'Received start-experiment')
+      console.log('Running test')
 
-    if ($scope.native) {
-      $scope.test.startTime = Date.now()
-      var resultsStr = AndroidAPI.runWorkloadPi(15000, $scope.test.testTimeMs)
-      $scope.test.endTime = Date.now()
-      var results = JSON.parse(resultsStr)
-      $scope.test.results = results
-      $(window).trigger('test-finished')
+      if ($scope.cooldownFirst) {
+        doCooldown()
+      }
+      var tempReading = JSON.parse(AndroidAPI.getTemperature())
+      $scope.exptStartTemp = tempReading.temperature
+      if ($scope.native) {
+        $scope.test.startTime = Date.now()
+        var resultsStr = AndroidAPI.runWorkloadPi(15000, $scope.test.testTimeMs)
+        $scope.test.endTime = Date.now()
+        var results = JSON.parse(resultsStr)
+        $scope.test.results = results
+        $(window).trigger('test-finished')
+      } else {
+        $scope.test.run()
+      }
+    })
+
+    if ($scope.cooldownFirst) {
+      console.log(`Warming up device a little bit ...`)
+      $scope.$apply(function () {
+        $scope.logs.push(`Warming up device a little bit ...`)
+      })
+      AndroidAPI.warmupAsync($scope.WARMUP_DURATION, `
+        $(window).trigger('start-experiment')
+      `)
     } else {
-      $scope.test.run()
+      $(window).trigger('start-experiment')
     }
   }
 
   $scope.interruptTest = function () {
-    $scope.test.interrupt()
+    $scope.logs.push(`Interrupted`)
     $(window).one('interrupt-finished', function () {
-      $scope.$apply(function () {
-        $scope.runningTest = false
-        $scope.test = undefined
-        if ($scope.callbackCode) {
-          AndroidAPI.removeChargeStateCallback($scope.callbackCode)
-        }
-      })
+      $scope.runningTest = false
+      $scope.test = undefined
 
-      AndroidAPI.interruptExperiment()
+      try {
+        AndroidAPI.interruptExperiment()
+      } catch (e) {
+      }
       $scope.interrupting = undefined
-      $scope.$root.$broadcast('enable-navigation')
+      setTimeout(() => {
+        $scope.$root.$broadcast('enable-navigation')
+      }, 10)
       clearInterval($scope.progressInterval)
       $('#test-progress').css('width', '0%')
+      clear()
+
     })
+    // First, interrupt the test itself, then inform Java about the interruption
+    $scope.test.interrupt()
   }
 
   startTest()

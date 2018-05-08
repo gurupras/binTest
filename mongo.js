@@ -1,4 +1,4 @@
-module.exports = function(url) {
+module.exports = function(url, database) {
 	if(!url) {
 		throw new Error('Must specify MongoDB URL');
 	}
@@ -42,11 +42,12 @@ module.exports = function(url) {
 		});
 	};
 
-	ret.query = async function(query) {
+	ret.query = async function(query, opts) {
 		await ret.connect();
+		debugger
 		var collection = ret.db.collection('results');
 		return new Promise((resolve, reject) => {
-			resolve(collection.find(query));
+			resolve(collection.find(query, opts));
 		});
 	}
 
@@ -59,7 +60,8 @@ module.exports = function(url) {
 	ret.connect = function() {
 		if(!ret.__connectPromise) {
 			ret.__connectPromise = new Promise((resolve, reject) => {
-				mongoClient.connect(url).then((db) =>  {
+				mongoClient.connect(url).then((client) =>  {
+					const db = client.db(database)
 					ret.db = db;
 					console.log("Connected successfully to server");
 					resolve(db);

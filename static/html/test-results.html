@@ -32,7 +32,8 @@
           </div>
           <div id="test-score">
             <h5>Test Score</h5>
-            We're working on crunching test results across devices down to a simple, meaningful score.
+            <span ng-show="!testScore">We're working on crunching test results across devices down to a simple, meaningful score.</span>
+            <span ng-show="testScore">{{testScore}}</span>
           </div>
           <div id="test-plot">
             <h5>Test Breakdown</h5>

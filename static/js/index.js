@@ -192,10 +192,10 @@
           url: 'device-experiment-ids',
           data: {deviceID: $rootScope.deviceID},
           dataType: 'json',
-          success: function(data) {
+          success: function(result) {
             $rootScope.$apply(function() {
-              $rootScope.testResults = data;
-              console.log(`device-experiment-ids=${JSON.stringify(data)}`);
+              $rootScope.testResults = result.order;
+              console.log(`device-experiment-ids=${JSON.stringify(result.order)}`);
             });
             resolve();
           },

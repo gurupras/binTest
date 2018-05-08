@@ -28,11 +28,15 @@ def generate_temperature_data():
 
 def get_temperature_hacks(deviceID):
 	temp_keys = yaml.load(open(temperature_key_file, 'rb'))
-	model = deviceID['Build.MODEL']
+	device_name = deviceID.get('DeviceName', None)
+	if device_name:
+		model = device_name['marketName']
+	else:
+		model = deviceID['Build.MODEL']
 	device_opts = temp_keys.get(model, None)
 	return temp_keys, device_opts
 
-def sanitize_data(data, deviceID=None):
+def sanitize_data(data, deviceID=None, called_by=None):
 	if deviceID is not None:
 		data['deviceID'] = deviceID
 	utc_offset = float(data.get('utcOffset', 0.0))	# In minutes
@@ -53,7 +57,7 @@ def sanitize_data(data, deviceID=None):
 		msg = {
 			'message': 'WARNING: No defaultKey found!',
 			'keys': keys,
-			'deviceID': deviceID,
+			'deviceID': data['deviceID'],
 		}
 		key_priority = temp_keys.get('key_priority')
 		keys = set(keys)
@@ -80,7 +84,10 @@ def sanitize_data(data, deviceID=None):
 		expr = eval('lambda x: x')
 	temperatures = [expr(x[def_key]) for x in temp_data]
 
-	return timestamps, temperatures
+	tuples = sorted(zip(timestamps, temperatures))
+	sorted_timestamps = [x[0] for x in tuples]
+	sorted_temperatures = [x[1] for x in tuples]
+	return sorted_timestamps, sorted_temperatures
 
 def main(argv):
 	data = generate_temperature_data()
