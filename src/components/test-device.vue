@@ -218,7 +218,7 @@ export default {
       }, 2 * 1000)
 
       this.checkRequisites()
-      this.exptID = AndroidAPI.startExperiment()
+      this.exptID = AndroidAPI.startExperiment(false)
       this.log(`Experiment ID: ${this.exptID}`)
       this.$emit('onExperimentIDAvailable', test, this.exptID)
       this.$on('test-finished', this.onTestFinished)
@@ -289,7 +289,7 @@ export default {
       this.$emit('onResultAvailable', testResults)
 
       var key = this.uploadData(JSON.stringify(testResults))
-      AndroidAPI.uploadExperimentData('http://smartphone.exposed/', 'upload-expt-data', key)
+      AndroidAPI.uploadExperimentData('http://smartphone.exposed/', 'upload-expt-data', key, false)
       this.testIDs.data[this.exptID] = {
         experimentID: this.exptID,
         startTime: moment(testResults.startTime)
