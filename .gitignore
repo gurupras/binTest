@@ -6,6 +6,12 @@ yarn-debug.log*
 yarn-error.log*
 /test/unit/coverage/
 
+# Backups
+/backup*
+
+# config.yaml
+config.yaml
+
 # Editor directories and files
 .idea
 .vscode
@@ -13,3 +19,9 @@ yarn-error.log*
 *.ntvs*
 *.njsproj
 *.sln
+.*.sw*
+
+# Python stuff
+*.pyc
+/env
+
