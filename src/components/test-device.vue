@@ -75,7 +75,7 @@ export default {
         }
       ],
       native: false,
-      debug: AndroidAPI.isFake || false,
+      debug: AndroidAPI.isFake || true,
       cooldownFirst: true,
       callbackCode: undefined,
       test: undefined,
@@ -226,7 +226,8 @@ export default {
       this.$emit('beforeTest')
 
       if (this.cooldownFirst) {
-        this.log(`Warming up device a little bit ... exportName=${self.exportName}`)
+        this.log(`Warming up device a little bit ...`)
+        console.log(`exportName=${self.exportName}`)
         AndroidAPI.warmupAsync(this.warmupDuration, `
           window.${this.exportName}.startExperiment()
         `)
