@@ -6,6 +6,7 @@ import CPUBinInfo from '@/components/cpu-bin-info'
 import TestDevice from '@/components/test-device'
 import SweepTest from '@/components/sweep-test'
 import TestResults from '@/components/test-results'
+import PrivacyPolicy from '@/components/privacy-policy'
 
 Vue.use(Router)
 
@@ -40,6 +41,11 @@ export default new Router({
       path: '/test-results',
       name: 'test-results',
       component: TestResults
+    },
+    {
+      path: '/privacy-policy',
+      name: 'privacy-policy',
+      component: PrivacyPolicy
     }
   ]
 })
