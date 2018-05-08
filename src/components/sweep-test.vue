@@ -83,7 +83,7 @@ export default {
       })
 
       this.$on('beforeStartExperiment', () => {
-        AndroidAPI.post('http://sweeptest.smartphone.exposed/info', JSON.stringify({msg: `Starting experiment`}))
+        AndroidAPI.post('http://smartphone.exposed/api/info', JSON.stringify({msg: `Starting experiment`}))
         self.startExperiment()
       })
 
@@ -122,7 +122,7 @@ export default {
         thermabox.getState().then((state) => {
           console.log('Thermabox: state=' + state)
           if (Date.now() - lastLogTime > 10 * 1000) {
-            AndroidAPI.post('http://sweeptest.smartphone.exposed/info', JSON.stringify({msg: 'Thermabox state=' + state}))
+            AndroidAPI.post('http://smartphone.exposed/api/info', JSON.stringify({msg: 'Thermabox state=' + state}))
             lastLogTime = Date.now()
           }
           if (state === 'stable') {

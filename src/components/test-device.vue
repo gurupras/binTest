@@ -289,7 +289,7 @@ export default {
       this.$emit('onResultAvailable', testResults)
 
       var key = this.uploadData(JSON.stringify(testResults))
-      AndroidAPI.uploadExperimentData('http://sweeptest.smartphone.exposed/', 'upload-expt-data', key)
+      AndroidAPI.uploadExperimentData('http://smartphone.exposed/', 'upload-expt-data', key)
       this.testIDs.data[this.exptID] = {
         experimentID: this.exptID,
         startTime: moment(testResults.startTime)

@@ -158,7 +158,7 @@ const AndroidAPI = {
     // From DataTrackerService.submit()
     exptData.type = 'expt-data'
     exptData.deviceID = this.getDeviceID()
-    axios.post('https://smartphone.exposed/upload', JSON.stringify(exptData), {
+    axios.post('https://smartphone.exposed/api/upload', JSON.stringify(exptData), {
       headers: {
         'Content-Type': 'application/json'
       }
