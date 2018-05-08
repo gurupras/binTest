@@ -3,8 +3,9 @@
     ["env", {
       "modules": false,
       "targets": {
-        "browsers": ["> 1%", "last 2 versions", "not ie <= 8"]
-      }
+        "browsers": ["Android >= 2"]
+      },
+      "debug": true
     }],
     "stage-2"
   ],
@@ -12,7 +13,7 @@
   "env": {
     "test": {
       "presets": ["env", "stage-2"],
-      "plugins": ["transform-vue-jsx", "transform-es2015-modules-commonjs", "dynamic-import-node"]
+      "plugins": ["transform-vue-jsx", "transform-es5-modules-commonjs", "dynamic-import-node"]
     }
   }
 }
