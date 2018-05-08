@@ -47,7 +47,9 @@ if (config.https) {
 
 var mongo = require('./mongo.js')(config.mongodb.url, config.mongodb.database)
 
-var fonoapi = require('./fonoapi.js')(config.fonoapi_key)
+const FonoAPI = require('./fonoapi.js')
+
+const fonoapi = new FonoAPI(config.fonoapi_key)
 
 var temperatureKeys
 try {
@@ -113,7 +115,12 @@ app.get('/device-description', (req, res) => {
   console.log(`deviceID=${JSON.stringify(deviceID)}`)
 
   // See if this model has an alias
-  var model = deviceID['DeviceName'] || deviceID['Build.MODEL']
+  var model
+  if (deviceID.DeviceName) {
+    model = deviceID.DeviceName.deviceName
+  } else {
+    model = deviceID['Build.MODEL']
+  }
   try {
     var modelAliases = yaml.safeLoad(fs.readFileSync('model-alias.yaml', 'utf-8'))
     model = modelAliases[model] || model
