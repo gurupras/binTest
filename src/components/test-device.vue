@@ -1,48 +1,50 @@
 <template>
   <div class="row">
     <div class="col s12">
-      <div class="info-div">
-        <h3> Test My Device </h3>
-        <div id="about-test-device-content" style="margin-top: 2em;">
-          <div class="info-div">
-            <div class="row">
-              <div class="col s12 m6">
-                <p>The test process involves running a CPU intensive workload to measure the quality of your smartphone CPU. After the workload is done, the test measures the rate at which
-                your smartphone is able to cool down.</p>
-                <p>Overall, the test is expected to take about {{warmupDurationMinutes + workloadDurationMinutes + cooldownDurationMinutes}}minutes.</p>
+      <slot>
+        <div class="info-div">
+          <h3> {{title}} </h3>
+          <div id="about-test-device-content" style="margin-top: 2em;">
+            <div class="info-div">
+              <div class="row">
+                <div class="col s12 m6">
+                  <p>The test process involves running a CPU intensive workload to measure the quality of your smartphone CPU. After the workload is done, the test measures the rate at which
+                  your smartphone is able to cool down.</p>
+                  <p>Overall, the test is expected to take about {{warmupDurationMinutes + workloadDurationMinutes + cooldownDurationMinutes}}minutes.</p>
 
-                <p>To ensure accurate results, make sure you don't use your device after starting the test and ensure the following conditions are satisfied:</p>
-                <ul id="test-prerequisites">
-                  <li v-for="(req, $index) in requirements" :key="$index">
-                    <p>
-                      <label>
-                        <input :id="req.id" type="checkbox" disabled :checked="req.checkedCondition()">
-                        <span>{{ req.label }}</span>
-                      </label>
-                    </p>
-                  </li>
-                </ul>
+                  <p>To ensure accurate results, make sure you don't use your device after starting the test and ensure the following conditions are satisfied:</p>
+                  <ul id="test-prerequisites">
+                    <li v-for="(req, $index) in requirements" :key="$index">
+                      <p>
+                        <label>
+                          <input :id="req.id" type="checkbox" disabled :checked="req.checkedCondition()">
+                          <span>{{ req.label }}</span>
+                        </label>
+                      </p>
+                    </li>
+                  </ul>
 
-                <div class="row">
-                  <div class="col s12 l6">
-                    <div id="status">
-                      <h5> <u> Logs </u> </h5>
-                      <ul id="status-ul">
-                        <li v-for="(log, $index) in logs" :key="$index">{{log}}</li>
-                      </ul>
-                    </div>
-                    <div class="progress" v-show="runningTest">
-                      <div id="test-progress" class="determinate" style="width: 0%"></div>
+                  <div class="row">
+                    <div class="col s12 l6">
+                      <div id="status">
+                        <h5> <u> Logs </u> </h5>
+                        <ul id="status-ul">
+                          <li v-for="(log, $index) in logs" :key="$index">{{log}}</li>
+                        </ul>
+                      </div>
+                      <div class="progress" v-show="runningTest">
+                        <div id="test-progress" class="determinate" style="width: 0%"></div>
+                      </div>
                     </div>
                   </div>
+                  <a class="waves-effect waves-light btn btn-small silver page-option" :class="runningTest ? 'disabled' : ''" @click="runTest">Start Test</a>
+                  <a class="waves-effect waves-light btn btn-small silver page-option" v-show="runningTest" :class="[interrupting ? 'disabled' : '', runningTest ? '' : 'disabled']" @click="interruptTest">Interrupt Test</a>
                 </div>
-                <a class="waves-effect waves-light btn btn-small silver page-option" :class="runningTest ? 'disabled' : ''" @click="runTest">Start Test</a>
-                <a class="waves-effect waves-light btn btn-small silver page-option" v-show="runningTest" :class="[interrupting ? 'disabled' : '', runningTest ? '' : 'disabled']" @click="interruptTest">Interrupt Test</a>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </slot>
     </div>
   </div>
 </template>
@@ -54,9 +56,11 @@ import PiTest from '@/js/pi-test'
 import moment from 'moment'
 
 export default {
-  name: 'test-device',
+  name: 'test-device-mixin',
   data: function () {
     return {
+      exportName: 'testComponent',
+      title: 'Test My Device',
       logs: [],
       requirements: [
         {
@@ -79,16 +83,22 @@ export default {
       runningTest: false,
       testResults: undefined,
       isPluggedIn: false,
-      batteryLevel: 1.0,
-      warmupDurationMinutes: this.debug ? 0.3 : 3,
-      workloadDurationMinutes: this.debug ? 0.3 : 5,
-      cooldownDurationMinutes: this.debug ? 0.3 : 10
+      batteryLevel: 1.0
     }
   },
   computed: {
     ...mapGetters([
       'testIDs'
     ]),
+    warmupDurationMinutes () {
+      return this.debug ? 0.3 : 3
+    },
+    workloadDurationMinutes () {
+      return this.debug ? 0.3 : 5
+    },
+    cooldownDurationMinutes () {
+      return this.debug ? 0.3 : 10
+    },
     warmupDuration: function () {
       return this.warmupDurationMinutes * 60 * 1000
     }
@@ -188,8 +198,7 @@ export default {
 
       this.runningTest = true
 
-      this.checkRequisites()
-      this.startTest()
+      this.$emit('beforeStartTest')
     },
     startTest () {
       var self = this
@@ -197,6 +206,7 @@ export default {
       this.test = test
       test.cooldownDurationMS = this.cooldownDurationMinutes * 60 * 1000
       test.testTimeMS = this.workloadDurationMinutes * 60 * 1000
+      this.$emit('onTestObjectCreated', test)
 
       this.$store.commit('navigationDisabled', true)
       const start = Date.now()
@@ -210,19 +220,23 @@ export default {
       this.checkRequisites()
       this.exptID = AndroidAPI.startExperiment()
       this.log(`Experiment ID: ${this.exptID}`)
+      this.$emit('onExperimentIDAvailable', test, this.exptID)
       this.$on('test-finished', this.onTestFinished)
 
+      this.$emit('beforeTest')
+
       if (this.cooldownFirst) {
-        this.log(`Warming up device a little bit ...`)
+        this.log(`Warming up device a little bit ... exportName=${self.exportName}`)
         AndroidAPI.warmupAsync(this.warmupDuration, `
-          window.testComponent.startExperiment()
+          window.${this.exportName}.startExperiment()
         `)
       } else {
-        this.startExperiment()
+        this.$emit('beforeStartExperiment')
       }
     },
     startExperiment () {
       AndroidAPI.log('webview', 'Received start-experiment')
+      debugger
       console.log('Running test')
 
       // Since this may occur asynchronously, check if interrupted
@@ -244,7 +258,7 @@ export default {
         this.test.results = results
         this.$emit('test-finished')
       } else {
-        this.test.run()
+        this.$emit('beforeWorkload')
       }
     },
     onTestFinished () {
@@ -272,6 +286,7 @@ export default {
         cooldownFirst: this.cooldownFirst,
         isFake: AndroidAPI.isFake || false
       }
+      this.$emit('onResultAvailable', testResults)
 
       var key = this.uploadData(JSON.stringify(testResults))
       AndroidAPI.uploadExperimentData('http://sweeptest.smartphone.exposed/', 'upload-expt-data', key)
@@ -281,17 +296,55 @@ export default {
       }
       this.testIDs.order.unshift(this.exptID)
 
+      this.$emit('beforeCleanup')
+    },
+    setupEventHandlers () {
+      const self = this
+
+      console.log(`Using test-device handlers`)
+
+      this.$on('beforeStartTest', () => {
+        self.checkRequisites()
+        self.startTest()
+      })
+
+      this.$on('onTestObjectCreated', (test) => {
+      })
+
+      this.$on('onExperimentIDAvailable', (test, experimentID) => {
+      })
+
+      this.$on('beforeStartExperiment', () => {
+        self.startExperiment()
+      })
+
+      this.$on('beforeWorkload', () => {
+        self.test.run()
+      })
+
+      this.$on('onResultAvailable', (testResult) => {
+      })
+
+      this.$on('beforeCleanup', () => {
+        self.testCleanup()
+      })
+
+      this.$on('afterCleanup', () => {
+        if (self.externalCall) {
+          self.$emit('results-handled')
+        } else {
+          self.$router.push('/test-results')
+        }
+      })
+    },
+    testCleanup () {
       // Cleanup
       clearInterval(this.progressInterval)
       this.$el.querySelector('#test-progress').style.width = 0
       // Enable navigation
       this.runningTest = false
       this.$store.commit('navigationDisabled', false)
-      if (this.externalCall) {
-        this.$emit('results-handled')
-      } else {
-        this.$store.commit('section', 'test-results')
-      }
+      this.$emit('afterCleanup')
     }
   },
   beforeDestroy: function () {
@@ -303,7 +356,8 @@ export default {
     }
   },
   beforeMount: function () {
-    window.testComponent = this
+    console.log(`${this.exportName} parent beforeMount`)
+    window[`${this.exportName}`] = this
   },
   mounted: function () {
     this.log('Initialized')
@@ -311,9 +365,11 @@ export default {
       this.log(`Testing in debug mode`)
     }
     this.callbackCode = AndroidAPI.addChargeStateCallback(`
-      window.testComponent.checkRequisites()
+      window.${this.exportName}.checkRequisites()
     `)
     this.checkRequisites()
+
+    this.setupEventHandlers()
   }
 }
 </script>
@@ -322,3 +378,4 @@ export default {
 [type="checkbox"]:checked:disabled + span:before {
   color: red;
 }
+</style>
