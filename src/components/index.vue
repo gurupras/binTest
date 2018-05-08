@@ -43,7 +43,8 @@ export default {
   name: 'index',
   computed: {
     ...mapGetters([
-      'deviceID'
+      'deviceID',
+      'isFake'
     ]),
     descriptiveName () {
       const deviceID = this.deviceID

@@ -75,7 +75,8 @@ export default {
     ...mapGetters([
       'deviceID',
       'mainSections',
-      'navigationDisabled'
+      'navigationDisabled',
+      'isFake'
     ]),
     currentSection: {
       get () {
@@ -84,9 +85,6 @@ export default {
       set (v) {
         this.$store.commit('section', v)
       }
-    },
-    isFake () {
-      return AndroidAPI.isFake
     },
     fakeDevices: {
       get () {
