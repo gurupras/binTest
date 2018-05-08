@@ -70,6 +70,9 @@ function PiTest (component, digits) { // eslint-disable-line no-unused-vars
         console.log(`worker posted message: ${JSON.stringify(e.data)}`)
         return
       }
+      // One runner finished
+      test.started--
+
       var data = e.data
       test.results.push({
         ft: data.endTime,
