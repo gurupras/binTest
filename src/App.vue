@@ -137,7 +137,7 @@ body {
   cursor: pointer;
 }
 .silver {
-  background-color: #cdd2d8;
+  background-color: #cdd2d8 !important;
   color: #000 !important;
 }
 
