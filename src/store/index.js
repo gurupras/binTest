@@ -22,6 +22,7 @@ Vue.use(VueAxios, axios)
 
 const state = {
   navigationDisabled: false,
+  isFake: AndroidAPI.isFake,
   deviceID: JSON.parse(AndroidAPI.getDeviceID()),
   deviceInfo: undefined,
   section: undefined,
@@ -65,6 +66,7 @@ const state = {
 
 const getters = {
   navigationDisabled: state => state.navigationDisabled,
+  isFake: state => state.isFake,
   deviceID: state => state.deviceID,
   deviceInfo: state => state.deviceInfo,
   section: state => state.section,
