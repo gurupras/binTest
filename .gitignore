@@ -11,3 +11,6 @@ dist
 
 /database
 *.pyc
+
+# Ignore backups
+/backup*
