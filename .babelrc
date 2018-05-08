@@ -3,7 +3,7 @@
     ["env", {
       "modules": false,
       "targets": {
-        "browsers": ["Android >= 2"]
+        "browsers": ["Android >= 4"]
       },
       "debug": true
     }],
