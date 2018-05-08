@@ -110,7 +110,7 @@ export default {
       this.$store.dispatch('getTestIDs').then(() => {
         console.log(`Fetched test IDs`)
       })
-      const mSelect = window.M.FormSelect.getInstance('#device-select')
+      const mSelect = window.M.FormSelect.getInstance(this.$el.querySelector('#device-select'))
       mSelect.input.value = e.target.value
     }
   },
@@ -119,7 +119,7 @@ export default {
       console.log(`Fetched test IDs`)
     })
 
-    const selectEl = this.$el.querySelector('select')
+    const selectEl = this.$el.querySelector('#device-select')
     window.M.FormSelect.init(selectEl)
   }
 }
