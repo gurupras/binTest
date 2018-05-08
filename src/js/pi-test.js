@@ -1,18 +1,8 @@
-import Pi from '@/js/pi'
+import PiWorker from '@/js/workers/pi.worker.js'
 
 /* global AndroidAPI */
 function createPiWebWorker () {
-  const workerSrc = `
-    ${Pi.toString()}
-    self.onmessage = function (e) {
-      CalculatePi(e.data.value)
-    }
-  `
-  const blob = new Blob([workerSrc], {
-    type: 'application/javascript'
-  })
-  const url = URL.createObjectURL(blob)
-  var worker = new Worker(url)
+  var worker = new PiWorker()
   worker.timeTaken = []
   worker.getTimes = function () {
     return JSON.stringify(worker.timeTaken)
