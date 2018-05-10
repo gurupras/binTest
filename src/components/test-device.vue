@@ -136,7 +136,6 @@ export default {
       this.test = undefined
       this.interrupting = undefined
       this.runningTest = undefined
-      this.testResults = ''
     },
     interruptTest () {
       var self = this
@@ -268,7 +267,7 @@ export default {
 
       AndroidAPI.toast('Uploading logs')
       var testResults = this.test.getResult()
-
+      this.testResults = testResults
       testResults['testType'] = 'test-type-v1'
       testResults['warmupDuration'] = this.warmupDuration
       testResults['ambientTemperature'] = this.temp
@@ -276,10 +275,6 @@ export default {
       testResults['startTemperature'] = this.exptStartTemp
       testResults['cooldownData'] = this.cooldownData
       testResults['endTemperature'] = this.cooldownData.last.tempAfterSleep
-      // XXX: --- hack ---
-      testResults['cooldownDuration'] = 10 * 60 * 1000
-      testResults['testTimeMs'] = 5 * 60 * 1000
-      // XXX: --- hack ---
       testResults['properties'] = {
         native: this.native,
         debug: this.debug,
