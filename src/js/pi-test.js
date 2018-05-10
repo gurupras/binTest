@@ -1,8 +1,6 @@
-import PiWorker from '@/js/workers/pi.worker.js'
-
 /* global AndroidAPI */
 function createPiWebWorker () {
-  var worker = new PiWorker()
+  var worker = new Worker('static/pi.js')
   worker.timeTaken = []
   worker.getTimes = function () {
     return JSON.stringify(worker.timeTaken)
