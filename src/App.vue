@@ -57,7 +57,6 @@
 </template>
 
 <script>
-/* global AndroidAPI */
 import { mapGetters } from 'vuex'
 import AppSection from '@/components/app-section'
 import fakeDevices from '@/js/fake-devices'
