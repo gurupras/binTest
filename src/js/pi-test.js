@@ -10,11 +10,12 @@ function createPiWebWorker () {
 
 function PiTest (component, digits) { // eslint-disable-line no-unused-vars
   var test = {}
-  test.cooldownDurationMS = 5 * 60 * 1000
+  test.warmupDurationMS = 3 * 60 * 1000
+  test.cooldownDurationMS = 10 * 60 * 1000
+  test.workloadDurationMS = 5 * 60 * 1000
   test.numWebWorkers = navigator.hardwareConcurrency
   test.digits = digits || 15000
   test.workers = []
-  test.testTimeMS = 7 * 60 * 1000
   test.zeroTime = Date.now()
   test.isRunning = false
   test.startTime = undefined
@@ -27,10 +28,11 @@ function PiTest (component, digits) { // eslint-disable-line no-unused-vars
 
   test.logParameters = function () {
     console.log(JSON.stringify({
+      warmupDurationMS: test.warmupDurationMS,
       cooldownDurationMS: test.cooldownDurationMS,
+      workloadDurationMS: test.workloadDurationMS,
       numWebWorkers: test.numWebWorkers,
       digits: test.digits,
-      testTimeMS: test.testTimeMS,
       zeroTime: test.zeroTime,
       done: test.done,
       valid: test.valid,
@@ -46,7 +48,8 @@ function PiTest (component, digits) { // eslint-disable-line no-unused-vars
       startTime: test.startTime,
       endTime: test.endTime,
       iterations: test.results,
-      testTimeMS: test.testTimeMS,
+      warmupDurationMS: test.warmupDurationMS,
+      workloadDurationMS: test.workloadDurationMS,
       cooldownDurationMS: test.cooldownDurationMS,
       numWebWorkers: test.numWebWorkers,
       valid: test.valid
@@ -90,7 +93,7 @@ function PiTest (component, digits) { // eslint-disable-line no-unused-vars
       // XXX: Right now, we just run the test for test.realTimeMS duration
 
       var timeElapsed = Date.now() - test.startTime
-      if (!test.done && timeElapsed < test.testTimeMS) {
+      if (!test.done && timeElapsed < test.workloadDurationMS) {
         test.started++
         // console.log('Starting another iteration');
         worker.postMessage({
@@ -170,8 +173,8 @@ function PiTest (component, digits) { // eslint-disable-line no-unused-vars
     var interval = setInterval(function () {
       var now = Date.now()
       var timeElapsed = now - test.startTime
-      if (timeElapsed > test.testTimeMS) {
-        // console.log(`timeElapsed(${timeElapsed}) >  test.testTimeMS(${test.testTimeMS})`)
+      if (timeElapsed > test.workloadDurationMS) {
+        // console.log(`timeElapsed(${timeElapsed}) >  test.workloadDurationMS(${test.workloadDurationMS})`)
         test.done = true
         test.endTime = Date.now()
         console.log('Finishing test..remaining: ' + test.started)

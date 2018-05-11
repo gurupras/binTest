@@ -203,8 +203,9 @@ export default {
       var self = this
       const test = PiTest(this)
       this.test = test
+      test.warmupDurationMS = this.warmupDuration
       test.cooldownDurationMS = this.cooldownDurationMinutes * 60 * 1000
-      test.testTimeMS = this.workloadDurationMinutes * 60 * 1000
+      test.workloadDurationMS = this.workloadDurationMinutes * 60 * 1000
       this.$emit('onTestObjectCreated', test)
 
       this.$store.commit('navigationDisabled', true)
@@ -269,7 +270,6 @@ export default {
       var testResults = this.test.getResult()
       this.testResults = testResults
       testResults['testType'] = 'test-type-v1'
-      testResults['warmupDuration'] = this.warmupDuration
       testResults['ambientTemperature'] = this.temp
       testResults['sweepIteration'] = this.iter
       testResults['startTemperature'] = this.exptStartTemp
