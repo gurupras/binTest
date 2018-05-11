@@ -104,7 +104,7 @@ class ExperimentPlotHandler(tornado.web.RequestHandler):
 				'experimentID': data['experimentID'],
 				'digits': data['digits'],
 				'startTime': data['startTime'],
-				'testTimeMs': data['testTimeMs'],
+				'workloadDurationMS': ranking_algorithm.get_expt_workload_duration(data),
 				'iterationsCompleted': len(data['iterations']),
 				'startTemperature': data['startTemperature'],
 			},
