@@ -92,6 +92,9 @@ export default {
       })
 
       this.$on('onResultAvailable', (testResult) => {
+        testResult.testType = 'sweep-test-vue-v1'
+        testResult.ambientTemperature = self.currentAmbientTemperature
+        testResult.iteration = self.iteration
       })
 
       this.$on('beforeCleanup', () => {
