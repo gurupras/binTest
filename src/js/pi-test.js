@@ -59,7 +59,7 @@ function PiTest (component, digits) { // eslint-disable-line no-unused-vars
   function __log (str, logToAndroid) {
     logToAndroid = logToAndroid || false
     if (logToAndroid) {
-      AndroidAPI.log('smartphones-exposed-pi-test.js', str)
+      AndroidAPI.log('smartphone-exposed-pi-test.js', str)
     }
     console.log(str)
   }

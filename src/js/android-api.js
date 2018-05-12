@@ -47,7 +47,7 @@ const uploadData = {}
 const AndroidAPI = {
   isFake: true,
   stockResponse: function () {
-    return new Error('Please install the smartphones.exposed app from the PlayStore')
+    return new Error('Please install the smartphone.exposed app from the PlayStore')
   },
   getDeviceID: function () {
     return JSON.stringify(fakeDevices.nexus5)

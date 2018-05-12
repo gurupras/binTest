@@ -6,7 +6,7 @@
           <div class="row">
             <div class="col s12 offset-m3 m6">
               <p>
-                smartphones.exposed allows you to profile your Smartphone CPU to understand
+                smartphone.exposed allows you to profile your Smartphone CPU to understand
                 where it ranks compared to other devices of the same make and model (<b>{{ descriptiveName }}</b>).
               </p>
               <p>
@@ -24,10 +24,7 @@
           </div>
           <div class="row" v-if="isFake">
             <div class="col s12 offset-m3 m6">
-              You can install the app from the
-              <a href="https://play.google.com/store/apps/details?id=edu.buffalo.cse.phonelab.smartphonesexposed">
-                PlayStore
-              </a>
+              You can install the app from the <a :href="appURL" target="_blank">PlayStore</a>
             </div>
           </div>
         </div>
@@ -43,6 +40,7 @@ export default {
   name: 'index',
   computed: {
     ...mapGetters([
+      'appURL',
       'deviceID',
       'isFake'
     ]),

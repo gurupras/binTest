@@ -65,6 +65,7 @@ const state = {
 }
 
 const getters = {
+  appURL: () => 'https://play.google.com/store/apps/details?id=edu.buffalo.cse.phonelab.smartphonesexposed',
   navigationDisabled: state => state.navigationDisabled,
   isFake: state => state.isFake,
   deviceID: state => state.deviceID,

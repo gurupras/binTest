@@ -7,10 +7,8 @@
           <div v-if="isFake">
             <!-- We're on desktop -->
             <p>
-              Please install the <code>smartphones.exposed</code> app from the
-            <a href="https://play.google.com/store/apps/details?id=edu.buffalo.cse.phonelab.smartphonesexposed">
-              PlayStore
-            </a>
+              Please install the <code>smartphone.exposed</code> app from the
+            <a :href="appURL" target="_blank">PlayStore</a>
           </p>
           </div>
           <div v-else>
@@ -39,10 +37,15 @@
 </template>
 
 <script>
+import { mapGetters } from 'vuex'
+
 /* global AndroidAPI */
 export default {
   name: 'cpu-bin-info',
   computed: {
+    ...mapGetters([
+      'appURL'
+    ]),
     isFake () {
       return AndroidAPI.isFake
     }
