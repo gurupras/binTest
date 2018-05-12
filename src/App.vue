@@ -5,7 +5,7 @@
         <div class="navbar-fixed">
           <nav>
             <div class="nav-wrapper silver" style="width: 100%;">
-              <div class="brand-logo">
+              <div class="brand-logo not-selectable">
                 <a class="brand-logo-link" href="javascript:void(0);" @click="reset">
                   <!-- <img :src="logo" /> -->
                   <span>smartphone.exposed</span>
@@ -222,5 +222,15 @@ p.lead {
   vertical-align: middle;
   height: 1em;
   width: 1em;
+}
+
+.not-selectable {
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Safari */
+  -khtml-user-select: none; /* Konqueror HTML */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome and Opera */
 }
 </style>
