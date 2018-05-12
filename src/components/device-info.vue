@@ -4,8 +4,8 @@
       <div class="col s12">
         <div class="center">
           <div class="app-options page-options">
-            <ul style="display: inline;">
-              <app-section class="app-option-li page-option-li" v-for="(section, $index) in sections"
+            <ul class="tabs">
+              <app-section class="tab app-option-li page-option-li" v-for="(section, $index) in sections"
                   :key="$index"
                   :navigationDisabled="navigationDisabled"
                   :target="section.target"
@@ -102,6 +102,10 @@ export default {
     }
   },
   mounted: function () {
+    // TODO: Initialize tabs
+    // window.M.Tabs.init(this.$el.querySelector('.tabs'), {
+    //   swipeable: true
+    // })
   }
 }
 </script>

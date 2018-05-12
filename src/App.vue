@@ -22,10 +22,10 @@
     <main>
       <div class="container-fluid">
         <div class="row">
-          <div class="col s12">
+          <div class="col s12 offset-m3 m6">
             <div class="app-options center">
-              <ul style="display: inline;">
-                <app-section v-for="(section, $index) in mainSections" class="app-option-li"
+              <ul class="tabs">
+                <app-section v-for="(section, $index) in mainSections" class="tab app-option-li"
                     :key="$index"
                     :navigationDisabled="navigationDisabled"
                     :target="section.target"
@@ -127,13 +127,36 @@ export default {
 
     const selectEl = this.$el.querySelector('#device-select')
     window.M.FormSelect.init(selectEl)
+
+    // TODO: Initialize tabs
+    // window.M.Tabs.init(this.$el.querySelector('.tabs'), {
+    //   swipeable: true
+    // })
   }
 }
 </script>
 
+<style lang="scss">
+$background-color: #202020;
+$selected-bg: linear-gradient(#155179,#1c6da2);
+$selected-color: #fff !important;
+
+body {
+  background-color: $background-color;
+}
+
+.tabs {
+  background-color: $background-color !important;
+}
+
+.selected {
+  background-image: $selected-bg;
+  color: $selected-color;
+}
+</style>
+
 <style>
 body {
-  background-color: #202020;
   color: #000;
 }
 
@@ -153,11 +176,7 @@ body {
 .btn:hover {
   background-image: linear-gradient(#3498db,#258cd1);
 }
-.btn.selected {
-  /*background-image: linear-gradient(#3498db,#258cd1);*/
-  background-image: linear-gradient(#155179,#1c6da2);
-  color: #fff !important;
-}
+
 main {
   padding-top: 1em;
 }
@@ -222,6 +241,10 @@ p.lead {
   vertical-align: middle;
   height: 1em;
   width: 1em;
+}
+
+.tabs .indicator {
+  display: none;
 }
 
 .not-selectable {

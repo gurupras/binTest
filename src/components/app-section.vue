@@ -1,6 +1,6 @@
 <template>
   <li>
-    <a class="waves-effect waves-light btn silver app-option"
+    <a class="silver app-option not-selectable"
         :class="[navigationDisabled ? 'disabled' : '', currentSection === target ? 'selected' : '']"
         @click="updateSection">
         {{ label }}
@@ -44,5 +44,10 @@ export default {
 .app-option {
   padding: 0 1em;
   margin: 0 0.1em;
+  cursor: pointer;
+}
+
+.app-option.selected {
+  color: #fff !important;
 }
 </style>
