@@ -26,7 +26,7 @@
 
                   <div class="row">
                     <div class="col s12 l6">
-                      <div id="status">
+                      <div id="status" v-show="runningTest || test">
                         <h5> <u> Logs </u> </h5>
                         <ul id="status-ul">
                           <li v-for="(log, $index) in logs" :key="$index">{{log}}</li>
