@@ -252,7 +252,7 @@ export default {
       this.exptStartTemp = tempReading.temperature
       if (this.native) {
         this.test.startTime = Date.now()
-        var resultsStr = AndroidAPI.runWorkloadPi(15000, this.test.testTimeMS)
+        var resultsStr = AndroidAPI.runWorkloadPi(15000, this.test.workloadDurationMS)
         this.test.endTime = Date.now()
         var results = JSON.parse(resultsStr)
         this.test.results = results

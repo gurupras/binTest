@@ -192,7 +192,7 @@ export default {
         experimentID: 'Experiment ID',
         digits: 'Pi-digits/Iteration',
         startTime: 'Experiment Start Time',
-        testTimeMs: 'Total Experiment Duration (ms)',
+        workloadDurationMS: 'Total Experiment Duration (ms)',
         iterationsCompleted: '# Iterations Completed',
         startTemperature: 'Initial Device Temperature'
       }
