@@ -7,6 +7,7 @@ import moment from 'moment'
 
 import androidAPI from '@/js/android-api'
 
+import logo from '@/assets/logo.png'
 import temperaturePlot from '@/store/modules/temperature-plot.js'
 import researchData from '@/store/modules/research-data.js'
 
@@ -66,6 +67,7 @@ const state = {
 
 const getters = {
   appURL: () => 'https://play.google.com/store/apps/details?id=edu.buffalo.cse.phonelab.smartphonesexposed',
+  logo: () => logo,
   navigationDisabled: state => state.navigationDisabled,
   isFake: state => state.isFake,
   deviceID: state => state.deviceID,

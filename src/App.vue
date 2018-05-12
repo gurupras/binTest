@@ -6,7 +6,10 @@
           <nav>
             <div class="nav-wrapper silver" style="width: 100%;">
               <div class="brand-logo">
-                <a class="brand-logo" href="javascript:void(0);" @click="reset">smartphone.exposed</a>
+                <a class="brand-logo-link" href="javascript:void(0);" @click="reset">
+                  <!-- <img :src="logo" /> -->
+                  <span>smartphone.exposed</span>
+                </a>
               </div>
             </div>
           </nav>
@@ -72,6 +75,7 @@ export default {
   },
   computed: {
     ...mapGetters([
+      'logo',
       'deviceID',
       'mainSections',
       'navigationDisabled',
@@ -128,11 +132,14 @@ body {
   color: #000;
 }
 
-.brand-logo {
+.brand-logo-link {
   padding-left: 0.2em !important;
   color: #000 !important;
   cursor: pointer;
 }
+.brand-logo-link span {
+}
+
 .silver {
   background-color: #cdd2d8 !important;
   color: #000 !important;
@@ -200,5 +207,15 @@ canvas {
 
 input {
   color: white;
+}
+
+p.lead {
+  /* font-size: 1em; */
+}
+
+.brand-logo img {
+  vertical-align: middle;
+  height: 1em;
+  width: 1em;
 }
 </style>

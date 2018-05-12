@@ -10,7 +10,7 @@
                 <div class="col s12 m6">
                   <p>The test process involves running a CPU intensive workload to measure the quality of your smartphone CPU. After the workload is done, the test measures the rate at which
                   your smartphone is able to cool down.</p>
-                  <p>Overall, the test is expected to take about {{warmupDurationMinutes + workloadDurationMinutes + cooldownDurationMinutes}}minutes.</p>
+                  <p>Overall, the test is expected to take about {{warmupDurationMinutes + workloadDurationMinutes + cooldownDurationMinutes}} minutes.</p>
 
                   <p>To ensure accurate results, make sure you don't use your device after starting the test and ensure the following conditions are satisfied:</p>
                   <ul id="test-prerequisites">

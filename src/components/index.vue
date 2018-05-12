@@ -9,13 +9,13 @@
                 smartphone.exposed allows you to profile your Smartphone CPU to understand
                 where it ranks compared to other devices of the same make and model (<b>{{ descriptiveName }}</b>).
               </p>
-              <p>
-                No two smartphone CPUs are created equal. There are inherent differences between them that
+              <p class="lead">
+                <b>No two smartphone CPUs are created equal</b>. There are inherent differences between them that
                 arise from the manufacturing process. While users expect their smartphones to behave similar to reviews or benchmarks found online,
                 they may often be surprised to find that their phones perform much poorer than the benchmarks.
               </p>
               <p>
-                The reason for this performance difference stems from
+                <b>The reason for this performance difference</b> stems from
                 manufacturers selling CPUs with varying transistor quality
                 characteristics, often at the same price, under the same name
                 and label without providing this information to the end-user.
