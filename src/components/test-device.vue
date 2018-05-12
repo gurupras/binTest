@@ -8,11 +8,18 @@
             <div class="info-div">
               <div class="row">
                 <div class="col s12 m6">
+                  <!-- Show a message if we're unable to run experiments on this device -->
+                  <div class="error" v-show="!haveTemperatureSensor">
+                    <h4>Error!</h4>
+                    <p>We found no accessible temperature sensor on your device. We cannot compare devices without knowing the temperature conditions under which a test was performed.</p>
+                    <p v-if="sdkVersion >= 27">Unfortunately, there is no solution to this issue on Android Oreo.</p>
+                  </div>
+
                   <p>The test process involves running a CPU intensive workload to measure the quality of your smartphone CPU. After the workload is done, the test measures the rate at which
                   your smartphone is able to cool down.</p>
                   <p>Overall, the test is expected to take about {{warmupDurationMinutes + workloadDurationMinutes + cooldownDurationMinutes}} minutes.</p>
 
-                  <p>To ensure accurate results, make sure you don't use your device after starting the test and ensure the following conditions are satisfied:</p>
+                  <p>To improve accuracy, make sure you don't use your device after starting the test and ensure the following conditions are satisfied:</p>
                   <ul id="test-prerequisites">
                     <li v-for="(req, $index) in requirements" :key="$index">
                       <p>
@@ -37,8 +44,8 @@
                       </div>
                     </div>
                   </div>
-                  <a class="waves-effect waves-light btn btn-small silver page-option" :class="runningTest ? 'disabled' : ''" @click="runTest">Start Test</a>
-                  <a class="waves-effect waves-light btn btn-small silver page-option" v-show="runningTest" :class="[interrupting ? 'disabled' : '', runningTest ? '' : 'disabled']" @click="interruptTest">Interrupt Test</a>
+                  <a class="waves-effect waves-light btn btn-small silver page-option" :class="[runningTest ? 'disabled' : '', haveTemperatureSensor ? '' : 'disabled']" @click="runTest">Start Test</a>
+                  <a class="waves-effect waves-light btn btn-small silver page-option" v-show="runningTest" :class="[interrupting ? 'disabled' : '', runningTest ? '' : 'disabled', haveTemperatureSensor ? '' : 'disabled']" @click="interruptTest">Interrupt Test</a>
                 </div>
               </div>
             </div>
@@ -62,6 +69,7 @@ export default {
       exportName: 'testComponent',
       title: 'Test My Device',
       logs: [],
+      haveTemperatureSensor: undefined,
       requirements: [
         {
           label: 'Phone not charging',
@@ -88,6 +96,7 @@ export default {
   },
   computed: {
     ...mapGetters([
+      'deviceID',
       'testIDs'
     ]),
     warmupDurationMinutes () {
@@ -101,6 +110,9 @@ export default {
     },
     warmupDuration: function () {
       return this.warmupDurationMinutes * 60 * 1000
+    },
+    sdkVersion () {
+      return this.deviceID['Build.VERSION.SDK_INT'] || 0
     }
   },
   watch: {
@@ -353,6 +365,15 @@ export default {
   beforeMount: function () {
     console.log(`${this.exportName} parent beforeMount`)
     window[`${this.exportName}`] = this
+    // Check if we can run experiments
+    // Test for temperature
+    try {
+      JSON.parse(AndroidAPI.getTemperature())
+      // We have temperature data. We can run experiments
+      this.haveTemperatureSensor = true
+    } catch (e) {
+      this.haveTemperatureSensor = false
+    }
   },
   mounted: function () {
     this.log('Initialized')

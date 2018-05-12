@@ -233,4 +233,8 @@ p.lead {
   user-select: none; /* Non-prefixed version, currently
                                   supported by Chrome and Opera */
 }
+
+.error {
+  color: red;
+}
 </style>
