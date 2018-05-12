@@ -97,6 +97,11 @@ export default {
       }
     }
   },
+  watch: {
+    '$route.name': function (v) {
+      this.currentSection = v
+    }
+  },
   methods: {
     reset: function () {
       this.currentSection = undefined
