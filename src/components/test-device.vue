@@ -223,9 +223,11 @@ export default {
       this.$store.commit('navigationDisabled', true)
       const start = Date.now()
       const totalMS = this.warmupDuration + ((this.workloadDurationMinutes + this.cooldownDurationMinutes) * 60 * 1000)
+      AndroidAPI.setupTestProgress()
       this.progressInterval = setInterval(() => {
         var now = Date.now()
-        var pct = ((now - start) / totalMS) * 100
+        var pct = (((now - start) / totalMS) * 100) >> 0
+        AndroidAPI.updateTestProgress(pct)
         self.$el.querySelector('#test-progress').style.width = `${pct}%`
       }, 2 * 1000)
 
@@ -348,6 +350,7 @@ export default {
       // Cleanup
       clearInterval(this.progressInterval)
       this.$el.querySelector('#test-progress').style.width = 0
+      AndroidAPI.teardownTestProgress()
       // Enable navigation
       this.runningTest = false
       this.$store.commit('navigationDisabled', false)

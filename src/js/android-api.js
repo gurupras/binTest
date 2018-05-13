@@ -177,7 +177,10 @@ const AndroidAPI = {
     return true
   },
   showDozeDialog: function () {
-  }
+  },
+  setupTestProgress () {},
+  updateTestProgress () {},
+  teardownTestProgress () {}
 }
 
 export default AndroidAPI
