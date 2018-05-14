@@ -12,7 +12,7 @@
                   <div class="error" v-show="!haveTemperatureSensor">
                     <h4>Error!</h4>
                     <p>We found no accessible temperature sensor on your device. We cannot compare devices without knowing the temperature conditions under which a test was performed.</p>
-                    <p v-if="sdkVersion >= 27">Unfortunately, there is no solution to this issue on Android Oreo.</p>
+                    <p v-if="sdkVersion >= 27">Currently, there is no solution to this issue on Android Oreo.</p>
                   </div>
 
                   <p>The test process involves running a CPU intensive workload to measure the quality of your smartphone CPU. After the workload is done, the test measures the rate at which
@@ -370,7 +370,10 @@ export default {
     // Check if we can run experiments
     // Test for temperature
     try {
-      JSON.parse(AndroidAPI.getTemperature())
+      const tempData = JSON.parse(AndroidAPI.getTemperature())
+      if (!tempData.temperature) {
+        throw new Error('No temperature sensor available')
+      }
       // We have temperature data. We can run experiments
       this.haveTemperatureSensor = true
     } catch (e) {
