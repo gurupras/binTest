@@ -100,13 +100,13 @@ export default {
       'testIDs'
     ]),
     warmupDurationMinutes () {
-      return this.debug ? 0.3 : 3
+      return this.debug ? 0.01 : 3
     },
     workloadDurationMinutes () {
       return this.debug ? 0.3 : 5
     },
     cooldownDurationMinutes () {
-      return this.debug ? 0.3 : 10
+      return this.debug ? 0.01 : 10
     },
     warmupDuration: function () {
       return this.warmupDurationMinutes * 60 * 1000
@@ -154,16 +154,15 @@ export default {
       this.logs.push('Test interrupted ...')
       this.$on('interrupt-finished', () => {
         self.runningTest = false
-        self.test = undefined
-
         try {
           AndroidAPI.interruptExperiment()
         } catch (e) {
         }
-        self.interrupting = undefined
-        self.$store.commit('navigationDisabled', false)
         clearInterval(this.progressInterval)
-        self.$el.querySelector('#test-progress').style.width = 0
+        this.$el.querySelector('#test-progress').style.width = 0
+        // Enable navigation
+        this.$store.commit('navigationDisabled', false)
+        AndroidAPI.teardownTestProgress(true)
         self.clear()
       })
       this.test.interrupt()
@@ -334,8 +333,8 @@ export default {
       this.$on('onResultAvailable', (testResult) => {
       })
 
-      this.$on('beforeCleanup', () => {
-        self.testCleanup()
+      this.$on('beforeCleanup', (wasInterrupted) => {
+        self.testCleanup(wasInterrupted)
       })
 
       this.$on('afterCleanup', () => {
@@ -346,11 +345,11 @@ export default {
         }
       })
     },
-    testCleanup () {
+    testCleanup (wasInterrupted) {
       // Cleanup
       clearInterval(this.progressInterval)
       this.$el.querySelector('#test-progress').style.width = 0
-      AndroidAPI.teardownTestProgress()
+      AndroidAPI.teardownTestProgress(!!wasInterrupted)
       // Enable navigation
       this.runningTest = false
       this.$store.commit('navigationDisabled', false)
