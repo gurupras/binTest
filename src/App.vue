@@ -121,6 +121,7 @@ export default {
     }
   },
   mounted: function () {
+    this.$store.dispatch('getCPUBinInfo')
     this.$store.dispatch('getTestIDs').then(() => {
       console.log(`Fetched test IDs`)
     })

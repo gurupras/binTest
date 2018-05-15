@@ -11,16 +11,24 @@
             <a :href="appURL" target="_blank">PlayStore</a>
           </p>
           </div>
+
           <div v-else>
-            <div v-if="Object.keys(binData) !== 0">
-              <p>
-                {{ binData }}
+            <div v-if="CPUBinData === undefined">
+              <div class="progress-preloader">
+                <div class="progress">
+                  <div class="indeterminate"></div>
+                </div>
+              </div>
+            </div>
+            <div v-else-if="CPUBinData && Object.keys(CPUBinData).length !== 0">
+              <p v-for="(entry, $index) in processedBinData" :key="$index">
+                <vue-markdown>{{ entry }}</vue-markdown>
               </p>
             </div>
             <div v-else>
               <!-- We're on mobile but we were unable to get bin info -->
               <div v-if="rootAvailable">
-                <p> Try running the app immediately after rebooting your device </p>
+                <p> Try running the app immediately after rebooting your device. </p>
               </div>
               <div v-else>
                 <p>
@@ -38,25 +46,63 @@
 
 <script>
 import { mapGetters } from 'vuex'
+import VueMarkdown from 'vue-markdown'
 
 /* global AndroidAPI */
 export default {
   name: 'cpu-bin-info',
+  components: {
+    VueMarkdown
+  },
   computed: {
     ...mapGetters([
-      'appURL'
+      'appURL',
+      'CPUBinData'
     ]),
     isFake () {
       return AndroidAPI.isFake
+    },
+    processedBinData () {
+      return this.processBinData()
+    },
+    rootAvailable () {
+      return AndroidAPI.isRootAvailable()
     }
   },
   data: function () {
     return {
-      binData: undefined
+    }
+  },
+  methods: {
+    processBinData () {
+      // binData is a JSON that contains filepath -> bin if it exists
+      // and as a last hailmary, it also tries to send across the output of
+      // dmesg if available
+      // First, handle all keys except dmesg
+      var ret = []
+      const binData = this.CPUBinData
+      Object.keys(binData).filter(e => e !== 'dmesg').forEach((key) => {
+        const str = `**${key}** -> ${binData[key]}`
+        ret.push(str)
+      })
+      if (ret.length > 0) {
+        // We got at least one entry from files
+        ret.unshift(`###CPU Bin`)
+      }
+
+      // Now dmesg processing
+      const dmesg = binData.dmesg
+      if (dmesg) {
+        dmesg.map((line) => {
+          const regex = /\[.*?\] (.*)/gm
+          const m = regex.exec(line)
+          ret.push(m[1])
+        })
+      }
+      return ret
     }
   },
   beforeMount () {
-    this.binData = AndroidAPI.getCPUBin()
   },
   mounted () {
   }

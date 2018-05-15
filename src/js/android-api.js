@@ -57,8 +57,8 @@ const AndroidAPI = {
       cpus: navigator.hardwareConcurrency
     })
   },
-  getCPUBin: function () {
-    return this.stockResponse()
+  getCPUBin: function (callback) {
+    eval(callback.replace('{{data}}', '{}')) // eslint-disable-line no-eval
   },
   getTemperatureData: function () {
     // return '[]';

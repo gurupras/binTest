@@ -4,7 +4,7 @@ import Vuex from 'vuex'
 import VueAxios from 'vue-axios'
 import axios from 'axios'
 import moment from 'moment'
-
+import { EventEmitter } from 'events'
 import androidAPI from '@/js/android-api'
 
 import logo from '@/assets/logo.png'
@@ -27,6 +27,7 @@ const state = {
   deviceID: JSON.parse(AndroidAPI.getDeviceID()),
   deviceInfo: undefined,
   section: undefined,
+  CPUBinData: undefined,
   testIDs: {},
   mainSections: [
     {
@@ -88,7 +89,8 @@ const getters = {
       deviceName = deviceID['Build.MODEL']
     }
     return `${manufacturer} ${deviceName}`
-  }
+  },
+  CPUBinData: state => state.CPUBinData
 }
 
 const mutations = {
@@ -106,6 +108,9 @@ const mutations = {
   },
   testIDs (state, val) {
     state.testIDs = val
+  },
+  CPUBinData (state, val) {
+    state.CPUBinData = val
   }
 }
 
@@ -170,6 +175,27 @@ const actions = {
         resolve(response.data)
       })
     })
+  },
+  getCPUBinInfo ({ state, commit }) {
+    const ee = new EventEmitter()
+    ee.on('got-cpu-bin-info', (data) => {
+      commit('CPUBinData', data)
+      if (data && Object.keys(data).length > 0) {
+        // We have something. Send it to the server
+        axios.post('/api/upload', {
+          type: 'cpu-bin-data',
+          data: {
+            deviceID: state.deviceID,
+            ...data
+          },
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+      }
+    })
+    window.__ee = ee
+    AndroidAPI.getCPUBin(`window.__ee.emit('got-cpu-bin-info', {{data}}); delete window.__ee`)
   }
 }
 
