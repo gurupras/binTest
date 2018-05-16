@@ -1,3 +1,5 @@
+import { EventEmitter } from 'events'
+
 var self = {
   mean (numbers) {
     var total = 0
@@ -64,6 +66,28 @@ var self = {
       index: currIdx,
       value: curr
     }
+  },
+  makeid (length) {
+    var text = ''
+    var possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+
+    for (var i = 0; i < length; i++) { text += possible.charAt(Math.floor(Math.random() * possible.length)) }
+
+    return text
+  },
+  asyncAPICallbackFn (fn, api) {
+    return new Promise((resolve, reject) => {
+      const ee = new EventEmitter()
+      var evtName = self.makeid(16)
+      var windowVarName = `Var${self.makeid(16)}`
+      window[windowVarName] = ee
+      ee.on(evtName, (data) => {
+        delete window[windowVarName]
+        resolve(data)
+      })
+      const str = `window['${windowVarName}'].emit('${evtName}', {{data}})`
+      fn.call(api, str)
+    })
   }
 }
 
