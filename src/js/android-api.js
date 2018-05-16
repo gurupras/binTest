@@ -49,8 +49,10 @@ const AndroidAPI = {
   stockResponse: function () {
     return new Error('Please install the smartphone.exposed app from the PlayStore')
   },
-  getDeviceID: function () {
-    return JSON.stringify(fakeDevices.nexus5)
+  getDeviceID: function (callback) {
+    const device = fakeDevices.nexus5
+    const str = callback.replace('{{data}}', JSON.stringify(device))
+    eval(str) // eslint-disable-line no-eval
   },
   getDeviceInfo: function () {
     return JSON.stringify({

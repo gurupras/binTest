@@ -19,7 +19,13 @@
       </div>
     </header>
 
-    <main>
+    <div class="progress-preloader" v-if="!deviceID">
+      <div class="progress">
+        <div class="indeterminate"></div>
+      </div>
+    </div>
+
+    <main v-else>
       <div class="container-fluid">
         <div class="row">
           <div class="col s12 offset-m3 m6">
@@ -121,18 +127,16 @@ export default {
     }
   },
   mounted: function () {
-    this.$store.dispatch('getCPUBinInfo')
-    this.$store.dispatch('getTestIDs').then(() => {
-      console.log(`Fetched test IDs`)
+    const self = this
+    this.$store.dispatch('initializeDeviceData').then(function () {
+      const selectEl = self.$el.querySelector('#device-select')
+      window.M.FormSelect.init(selectEl)
+
+      // TODO: Initialize tabs
+      // window.M.Tabs.init(self.$el.querySelector('.tabs'), {
+      //   swipeable: true
+      // })
     })
-
-    const selectEl = this.$el.querySelector('#device-select')
-    window.M.FormSelect.init(selectEl)
-
-    // TODO: Initialize tabs
-    // window.M.Tabs.init(this.$el.querySelector('.tabs'), {
-    //   swipeable: true
-    // })
   }
 }
 </script>

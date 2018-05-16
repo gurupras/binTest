@@ -4,8 +4,8 @@ import Vuex from 'vuex'
 import VueAxios from 'vue-axios'
 import axios from 'axios'
 import moment from 'moment'
-import { EventEmitter } from 'events'
 import androidAPI from '@/js/android-api'
+import utils from '@/js/utils'
 
 import logo from '@/assets/logo.png'
 import temperaturePlot from '@/store/modules/temperature-plot.js'
@@ -24,7 +24,7 @@ Vue.use(VueAxios, axios)
 const state = {
   navigationDisabled: false,
   isFake: AndroidAPI.isFake,
-  deviceID: JSON.parse(AndroidAPI.getDeviceID()),
+  deviceID: undefined,
   deviceInfo: undefined,
   section: undefined,
   CPUBinData: undefined,
@@ -115,6 +115,10 @@ const mutations = {
 }
 
 const actions = {
+  async getDeviceID ({ state, commit }) {
+    const data = await utils.asyncAPICallbackFn(AndroidAPI.getDeviceID, AndroidAPI)
+    commit('deviceID', data)
+  },
   async getDeviceDescription ({ state, commit, dispatch }) {
     var response = await axios.get('/api/device-description', {
       params: {
@@ -176,26 +180,30 @@ const actions = {
       })
     })
   },
-  getCPUBinInfo ({ state, commit }) {
-    const ee = new EventEmitter()
-    ee.on('got-cpu-bin-info', (data) => {
-      commit('CPUBinData', data)
-      if (data && Object.keys(data).length > 0) {
-        // We have something. Send it to the server
-        axios.post('/api/upload', {
-          type: 'cpu-bin-data',
-          data: {
-            deviceID: state.deviceID,
-            ...data
-          },
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        })
-      }
-    })
-    window.__ee = ee
-    AndroidAPI.getCPUBin(`window.__ee.emit('got-cpu-bin-info', {{data}}); delete window.__ee`)
+  async getCPUBinInfo ({ state, commit, dispatch }) {
+    const data = await utils.asyncAPICallbackFn(AndroidAPI.getCPUBin, AndroidAPI)
+    commit('CPUBinData', data)
+    if (data && Object.keys(data).length > 0) {
+      // We have something. Send it to the server
+      axios.post('/api/upload', {
+        type: 'cpu-bin-data',
+        data: {
+          deviceID: state.deviceID,
+          ...data
+        },
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+    }
+  },
+  async initializeDeviceData ({ state, commit, dispatch }) {
+    await dispatch('getDeviceID')
+    console.log(`Fetched deviceID`)
+    await dispatch('getCPUBinInfo')
+    console.log(`Fetched CPU bin info`)
+    await dispatch('getTestIDs')
+    console.log(`Fetched test IDs`)
   }
 }
 
