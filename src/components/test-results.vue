@@ -216,8 +216,8 @@ export default {
       var keyLabelDict = {
         experimentID: 'Experiment ID',
         digits: 'Pi-digits/Iteration',
-        startTime: 'Experiment Start Time',
-        workloadDurationMS: 'Total Experiment Duration (ms)',
+        startTime: 'Start Time',
+        workloadDurationMS: 'Total Duration (ms)',
         iterationsCompleted: '# Iterations Completed',
         startTemperature: 'Initial Device Temperature'
       }
