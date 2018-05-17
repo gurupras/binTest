@@ -17,9 +17,14 @@
 
                   <p>The test process involves running a CPU intensive workload to measure the quality of your smartphone CPU. After the workload is done, the test measures the rate at which
                   your smartphone is able to cool down.</p>
-                  <p>Overall, the test is expected to take about {{warmupDurationMinutes + workloadDurationMinutes + cooldownDurationMinutes}} minutes.</p>
+                  <p>
+                    Overall, the test is expected to take about {{warmupDurationMinutes + workloadDurationMinutes + cooldownDurationMinutes}} minutes.
+                    Please make sure you don't use your device after starting the test. The test will chime to let you know that it's done.
+                  </p>
 
-                  <p>To improve accuracy, make sure you don't use your device after starting the test and ensure the following conditions are satisfied:</p>
+                  <p v-if="false">To improve accuracy,make sure you don't use your device after starting the test and ensure the following conditions are satisfied:</p>
+                  <p></p>
+                  <p> Ensure the following conditions are satisfied:</p>
                   <ul id="test-prerequisites">
                     <li v-for="(req, $index) in requirements" :key="$index">
                       <p>
