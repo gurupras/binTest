@@ -27,16 +27,16 @@
             <div id="test-info" v-if="testInfo.length > 0">
               <h5>Test Info</h5>
               <ul>
-                <li v-if="!testResult.valid">
+                <li>
                   <div class="test-info-entry row" style="margin: 0.2em 0;">
                     <div class="col s6 l3 test-info-label">
                       <span>Test Valid</span>
                     </div>
                     <div class="col s6 l3 test-info-value">
-                      <span style="color: red; font-weight: bold;">{{testResult.valid}}</span>
+                      <span style="font-weight: bold;" :style="{color: testResult.valid ? 'green' : 'red'}">{{testResult.valid ? 'Yes' : 'No'}}</span>
                     </div>
                   </div>
-                  <div class="test-info-entry row" style="margin: 0.2em 0;">
+                  <div v-if="!testResult.valid" class="test-info-entry row" style="margin: 0.2em 0;">
                     <div class="col s6 l3 test-info-label">
                       <span>Reasons for Invalidity</span>
                     </div>
