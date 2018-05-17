@@ -44,7 +44,7 @@
                       </div>
                     </div>
                   </div>
-                  <a class="waves-effect waves-light btn btn-small silver page-option" :class="[runningTest ? 'disabled' : '', haveTemperatureSensor ? '' : 'disabled']" @click="runTest">Start Test</a>
+                  <a class="waves-effect waves-light btn btn-small silver page-option" :class="[runningTest ? 'disabled' : '', haveTemperatureSensor ? '' : 'disabled', testConditionsSatisfied ? '' : 'disabled']" @click="runTest">Start Test</a>
                   <a class="waves-effect waves-light btn btn-small silver page-option" v-show="runningTest" :class="[interrupting ? 'disabled' : '', runningTest ? '' : 'disabled', haveTemperatureSensor ? '' : 'disabled']" @click="interruptTest">Interrupt Test</a>
                 </div>
               </div>
