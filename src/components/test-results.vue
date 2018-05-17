@@ -27,6 +27,24 @@
             <div id="test-info" v-if="testInfo.length > 0">
               <h5>Test Info</h5>
               <ul>
+                <li v-if="!testResult.valid">
+                  <div class="test-info-entry row" style="margin: 0.2em 0;">
+                    <div class="col s6 l3 test-info-label">
+                      <span>Test Valid</span>
+                    </div>
+                    <div class="col s6 l3 test-info-value">
+                      <span>{{testResult.valid}}</span>
+                    </div>
+                  </div>
+                  <div class="test-info-entry row" style="margin: 0.2em 0;">
+                    <div class="col s6 l3 test-info-label">
+                      <span>Reasons for Invalidity</span>
+                    </div>
+                    <div class="col s6 l3 test-info-value">
+                      <vue-markdown v-for="reason in testResult.validityReasons" :key="reason">{{reason}}</vue-markdown>
+                    </div>
+                  </div>
+                </li>
                 <li v-for="info in testInfo" :key="info.label">
                   <div class="test-info-entry row" style="margin: 0.2em 0;">
                     <div class="col s6 l3 test-info-label">
