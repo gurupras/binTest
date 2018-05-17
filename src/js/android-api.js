@@ -193,7 +193,10 @@ const AndroidAPI = {
   },
   setupTestProgress () {},
   updateTestProgress () {},
-  teardownTestProgress () {}
+  teardownTestProgress () {},
+  getBuildVersion () {
+    return 0
+  }
 }
 
 export default AndroidAPI

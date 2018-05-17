@@ -324,6 +324,7 @@ export default {
       testResults['startTemperature'] = this.exptStartTemp
       testResults['cooldownData'] = this.cooldownData
       testResults['endTemperature'] = this.cooldownData.last.tempAfterSleep
+      testResults['appVersion'] = AndroidAPI.getBuildVersion()
       testResults['properties'] = {
         native: this.native,
         debug: this.debug,
