@@ -384,6 +384,10 @@ app.get('/experiment-results', (req, res) => {
       })
 
       Promise.all([exptPlotPromise, exptRankingPromise, sanitizePromise]).then(() => {
+        Object.assign(testResults, {
+          valid: result.valid,
+          validityReasons: result.validityReasons
+        })
         res.send(JSON.stringify(testResults))
       }).catch((e) => {
         console.error(e)
