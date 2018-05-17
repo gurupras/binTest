@@ -115,6 +115,17 @@ const AndroidAPI = {
       clearInterval(window.csc)
     };
   },
+  addScreenStateCallback (content) {
+    window.ssc = setInterval(() => {
+      eval(content) // eslint-disable-line no-eval
+    }, 1000)
+  },
+  removeScreenStateCallback () {
+    clearInterval(window.ssc)
+  },
+  isScreenOn () {
+    return Math.random() > 0.5
+  },
   waitUntilAmbientTemperature: function () {
   },
   startMonsoon: function () {

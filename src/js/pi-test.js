@@ -8,6 +8,16 @@ function createPiWebWorker () {
   return worker
 }
 
+const TestPhases = Object.freeze({
+  NOT_STARTED: -1,
+  STARTED: 0,
+  WARMUP: 1,
+  COOLDOWN: 2,
+  WORKLOAD: 3,
+  INTERRUPTED: 4,
+  FINISHED: 5
+})
+
 function PiTest (component, digits) { // eslint-disable-line no-unused-vars
   var test = {}
   test.warmupDurationMS = 3 * 60 * 1000
@@ -23,6 +33,10 @@ function PiTest (component, digits) { // eslint-disable-line no-unused-vars
   test.valid = true
   test.interrupted = false
   test.started = 0
+  test.connectivityStateChanges = []
+  test.screenStateChanges = []
+  test.validityReasons = new Set()
+  test.currentPhase = TestPhases.NOT_STARTED
   test.component = component
   // Create workers equal to number of CPU cores
 
@@ -52,7 +66,10 @@ function PiTest (component, digits) { // eslint-disable-line no-unused-vars
       workloadDurationMS: test.workloadDurationMS,
       cooldownDurationMS: test.cooldownDurationMS,
       numWebWorkers: test.numWebWorkers,
-      valid: test.valid
+      connectivityStateChanges: test.connectivityStateChanges,
+      screenStateChanges: test.screenStateChanges,
+      valid: test.valid,
+      validityReasons: Array.from(test.validityReasons)
     }
   }
 
@@ -194,6 +211,7 @@ function PiTest (component, digits) { // eslint-disable-line no-unused-vars
   test.interrupt = function () {
     if (test.isRunning) {
       test.interrupted = true
+      test.currentPhase = TestPhases.INTERRUPTED
     } else {
       // The test isn't running yet. Just fire interrupt-finished
       test.component.$emit('interrupt-finished')
@@ -211,4 +229,4 @@ function PiTest (component, digits) { // eslint-disable-line no-unused-vars
   return test
 }
 
-export default PiTest
+export {PiTest, TestPhases}

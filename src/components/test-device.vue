@@ -59,7 +59,7 @@
 <script>
 /* global AndroidAPI */
 import { mapGetters } from 'vuex'
-import PiTest from '@/js/pi-test'
+import { PiTest, TestPhases } from '@/js/pi-test'
 import moment from 'moment'
 
 export default {
@@ -85,7 +85,8 @@ export default {
       native: false,
       debug: AndroidAPI.isFake || false,
       cooldownFirst: true,
-      callbackCode: undefined,
+      chargeStateCallbackCode: undefined,
+      screenStateCallbackCode: undefined,
       test: undefined,
       interrupting: undefined,
       runningTest: false,
@@ -138,12 +139,41 @@ export default {
       return this.batteryLevel > 0.8
     },
     checkRequisites () {
+      this.checkConnectivityRequisites()
+      this.checkScreenRequisites()
+    },
+    checkConnectivityRequisites () {
       // console.log(`Checking requisites ...`)
       this.isPluggedIn = AndroidAPI.isPluggedIn()
       this.batteryLevel = AndroidAPI.getBatteryLevel()
       if (this.isPluggedIn || this.batteryLevel < 0.8) {
         if (this.runningTest && this.test) {
+          this.test.connectivityStateChanges.push({
+            isPluggedIn: this.isPluggedIn,
+            batteryLevel: this.batteryLevel,
+            now: new Date()
+          })
           this.test.setValid(false)
+          if (this.isPluggedIn) {
+            this.test.validityReasons.add('Phone was plugged in')
+          }
+          if (this.batteryLevel < 0.8) {
+            this.test.validityReasons.add('Battery level < 80%')
+          }
+        }
+      }
+    },
+    checkScreenRequisites () {
+      const isScreenOn = AndroidAPI.isScreenOn()
+      this.isScreenOn = isScreenOn
+      if (this.runningTest && this.test) {
+        this.test.screenStateChanges.push({
+          isScreenOn,
+          now: new Date()
+        })
+        if (this.test.currentPhase === TestPhases.COOLDOWN) {
+          this.test.setValid(false)
+          this.test.validityReasons.add('Screen was turned on during cooldown phase')
         }
       }
     },
@@ -173,6 +203,8 @@ export default {
     doCooldown () {
       try {
         this.log('Running cooldown')
+        this.test.currentPhase = TestPhases.COOLDOWN
+        this.checkScreenRequisites()
         var result = AndroidAPI.sleepForDuration(this.test.getTestObj().cooldownDurationMS)
         this.cooldownData = JSON.parse(result)
       } catch (e) {
@@ -210,13 +242,13 @@ export default {
       }
 
       this.runningTest = true
-
       this.$emit('beforeStartTest')
     },
     startTest () {
       var self = this
       const test = PiTest(this)
       this.test = test
+      this.test.currentPhase = TestPhases.STARTED
       test.warmupDurationMS = this.warmupDuration
       test.cooldownDurationMS = this.cooldownDurationMinutes * 60 * 1000
       test.workloadDurationMS = this.workloadDurationMinutes * 60 * 1000
@@ -244,6 +276,7 @@ export default {
       if (this.cooldownFirst) {
         this.log(`Warming up device a little bit ...`)
         console.log(`exportName=${self.exportName}`)
+        this.test.currentPhase = TestPhases.WARMUP
         AndroidAPI.warmupAsync(this.warmupDuration, `
           window.${this.exportName}.startExperiment()
         `)
@@ -281,7 +314,7 @@ export default {
       if (!this.cooldownFirst) {
         this.doCooldown()
       }
-
+      this.test.currentPhase = TestPhases.FINISHED
       AndroidAPI.toast('Uploading logs')
       var testResults = this.test.getResult()
       this.testResults = testResults
@@ -360,8 +393,11 @@ export default {
     }
   },
   beforeDestroy: function () {
-    if (this.callbackCode) {
-      AndroidAPI.removeChargeStateCallback(this.callbackCode)
+    if (this.chargeStateCallbackCode) {
+      AndroidAPI.removeChargeStateCallback(this.chargeStateCallbackCode)
+    }
+    if (this.screenStateCallbackCode) {
+      AndroidAPI.removeScreenStateCallback(this.screenStateCallbackCode)
     }
     if (this.runningTest) {
       this.interruptTest()
@@ -388,8 +424,11 @@ export default {
     if (this.debug) {
       this.log(`Testing in debug mode`)
     }
-    this.callbackCode = AndroidAPI.addChargeStateCallback(`
-      window.${this.exportName}.checkRequisites()
+    this.chargeStateCallbackCode = AndroidAPI.addChargeStateCallback(`
+      window.${this.exportName}.checkConnectivityRequisites()
+    `)
+    this.screenStateCallbackCode = AndroidAPI.addChargeStateCallback(`
+      window.${this.exportName}.checkScreenRequisites()
     `)
     this.checkRequisites()
 
