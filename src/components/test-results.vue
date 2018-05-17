@@ -33,7 +33,7 @@
                       <span>Test Valid</span>
                     </div>
                     <div class="col s6 l3 test-info-value">
-                      <span>{{testResult.valid}}</span>
+                      <span style="color: red; font-weight: bold;">{{testResult.valid}}</span>
                     </div>
                   </div>
                   <div class="test-info-entry row" style="margin: 0.2em 0;">
@@ -60,6 +60,13 @@
             <div id="test-score">
               <h5>Test Score</h5>
               <div>
+                <div v-if="!testResult.valid" style="color: red;">
+                  <p>
+                    This experiment will not be used while ranking other devices as it was marked invalid.
+                    You may however, still be able to rank this experiment in comparison to others although the ranking may
+                    be inaccurate.
+                  </p>
+                </div>
                 <div v-if="!testRank">
                   <p>
                     We're working on crunching test results across devices down to a simple, meaningful score.
@@ -69,7 +76,7 @@
                   <!-- We have some data for testRank -->
                   <div v-if="testRank.error">
                     <!-- Server reported an error while computing rank -->
-                    <p> Server could not compute your device's rank</p>
+                    <p> We could not compute your device's rank</p>
                     <p> <vue-markdown>{{getHumanErrorMessage(testRank.error)}}</vue-markdown> </p>
                   </div>
                   <div v-else>
@@ -234,9 +241,9 @@ export default {
     getHumanErrorMessage (err) {
       switch (err.error_code) {
         case 'NOT_ENOUGH_DATA':
-          return `Server does not have sufficient data to rank devices of the model __${this.fullDeviceName}__`
+          return `We do not have sufficient data to rank devices of the model __${this.fullDeviceName}__`
         case 'UNKNOWN':
-          return `Server encountered an unexpected error: ${err.message}`
+          return `Our server encountered an unexpected error: ${err.message}`
       }
     }
   },
