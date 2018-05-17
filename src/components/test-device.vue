@@ -113,6 +113,9 @@ export default {
     },
     sdkVersion () {
       return this.deviceID['Build.VERSION.SDK_INT'] || 0
+    },
+    testConditionsSatisfied () {
+      return this.checkIsPluggedIn() && this.checkBatteryLevel()
     }
   },
   watch: {
