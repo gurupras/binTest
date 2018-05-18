@@ -50,9 +50,18 @@ const AndroidAPI = {
     return new Error('Please install the smartphone.exposed app from the PlayStore')
   },
   getDeviceID: function (callback) {
-    const device = fakeDevices.nexus5
-    const str = callback.replace('{{data}}', JSON.stringify(device))
-    eval(str) // eslint-disable-line no-eval
+    const device = localStorage.getItem('smartphone.exposed:fakeDevice')
+    var deviceID = fakeDevices[device]
+    if (!deviceID) {
+      deviceID = {
+        'Build.MANUFACTURER': '',
+        'Build.DeviceName': {
+          deviceName: ''
+        }
+      }
+    }
+    callback = callback.replace('{{data}}', JSON.stringify(deviceID))
+    eval(callback) // eslint-disable-line no-eval
   },
   getDeviceInfo: function () {
     return JSON.stringify({

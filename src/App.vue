@@ -47,12 +47,13 @@
         <div class="row" v-if="isFake">
           <div class="col offset-s6 offset-m10 s6 m2 input-field">
             <select id="device-select" @change="changeSimulatedDevice">
+              <option value="" disabled selected>Choose device to emulate</option>
               <option v-for="device in fakeDevices" :value="'' + device" :key="device"
                   :class="[deviceID === fakeDevices[device] ? 'selected' : '']">
                 {{ device }}
               </option>
             </select>
-            <label>Select device to emulate</label>
+            <label>Emulate Device</label>
           </div>
         </div>
         <div class="row">
