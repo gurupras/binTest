@@ -493,7 +493,7 @@ app.get('/is-experiment-valid', exptValidRateLimiter, (req, res) => {
       if (docs.length === 0) {
         console.log(`ExperimentID: ${exptID} not found!`)
         return res.status(500).send(JSON.stringify({
-          error: 'Test not found. If you just completed the experiment, retry in some time as the logs may not have been uploaded yet'
+          error: 'Test not found'
         }))
       }
       const doc = docs[0]
