@@ -46,7 +46,7 @@ const state = {
       label: 'Test Results',
       target: 'test-results',
       hide: function () {
-        return Object.keys(state.testIDs).length === 0
+        return !state.testIDs || !state.testIDs.order || Object.keys(state.testIDs.order).length === 0
       }
     },
     {
