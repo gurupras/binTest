@@ -206,17 +206,16 @@ export default {
         this.log('Running cooldown')
         this.test.currentPhase = TestPhases.COOLDOWN
         this.checkScreenRequisites()
-        const cooldownStartUpTime = AndroidAPI.upTime()
         var result = AndroidAPI.sleepForDuration(this.test.getTestObj().cooldownDurationMS)
-        const cooldownEndUpTime = AndroidAPI.upTime()
+        this.cooldownData = JSON.parse(result)
+        const cooldownStartUpTime = result.startUpTime
         // Now, make sure the uptime hasn't elapsed by too much
-        const elapsedUpTime = cooldownEndUpTime - cooldownStartUpTime
+        const elapsedUpTime = result.endUpTime - cooldownStartUpTime
         const percentElapsed = (elapsedUpTime / this.test.cooldownDurationMS) * 100
         if (percentElapsed >= 50) {
           this.test.setValid(false)
           this.test.validityReasons.add('Screen was turned on during cooldown phase')
         }
-        this.cooldownData = JSON.parse(result)
       } catch (e) {
         this.log(`Failed cooldown: ${e}`)
       }
