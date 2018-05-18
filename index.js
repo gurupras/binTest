@@ -402,6 +402,14 @@ app.get('/experiment-results', (req, res) => {
 app.get('/device-experiment-ids', (req, res) => {
   var deviceID = extractFromQueryAsJSON(req.query.deviceID)
   console.log(`Got request for device-experiment-ids: deviceID=${deviceID}`)
+  if (!deviceID['Build.HARDWARE']) {
+    // Something strange is going on
+    return res.send({
+      data: {},
+      order: []
+    })
+  }
+
   var mongoDBQuery = generateDeviceQuery(deviceID, {
     type: 'expt-data',
   })
