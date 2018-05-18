@@ -45,7 +45,7 @@ var currentExperimentID
 const uploadData = {}
 
 const AndroidAPI = {
-  isFake: true,
+  isFake: localStorage.getItem('smartphone.exposed:isFake'),
   stockResponse: function () {
     return new Error('Please install the smartphone.exposed app from the PlayStore')
   },
