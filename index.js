@@ -9,8 +9,10 @@ var morgan = require('morgan')
 var util = require('util')
 var cors = require('cors')
 var httpRewrite = require('http-rewrite-middleware')
+var RateLimit = require('express-rate-limit')
 
 var app = express()
+app.enable('trust-proxy')
 app.use(compression())
 app.use(bodyParser.json({limit: '200mb'}))
 app.use(cors())
@@ -452,6 +454,47 @@ app.get('/device-rank', function (req, res) {
       console.log(`[temperature-plot]: Success!`)
       res.status(200).send(body)
     }
+  })
+})
+
+
+var exptValidRateLimiter = new RateLimit({
+  windowMs: 15*60*1000,
+  max: 20,
+  delayMs: 0
+})
+
+app.get('/is-experiment-valid', exptValidRateLimiter, (req, res) => {
+  const exptID = req.query.experimentID
+  const query = {
+    experimentID: exptID,
+  }
+  console.log(`[is-experiment-valid]: experimentID=${exptID}`)
+
+  var mongoDBQuery = generateDeviceQuery({}, {
+    type: 'expt-data',
+    experimentID: exptID
+  })
+  mongo.query(mongoDBQuery).then((result) => {
+    result.toArray((err, docs) => {
+      if (err) {
+        console.log(err && err.stack)
+        return res.status(500).send(err.message)
+      }
+      console.log(`docs.length=${docs.length}`)
+      if (docs.length === 0) {
+        console.log(`ExperimentID: ${exptID} not found!`)
+        return res.status(500).send(JSON.stringify({
+          error: 'Test not found. If you just completed the experiment, retry in some time as the logs may not have been uploaded yet'
+        }))
+      }
+      const doc = docs[0]
+      var result = {
+        valid: doc.valid,
+        validityReasons: doc.validityReasons
+      }
+      res.send(JSON.stringify(result))
+    })
   })
 })
 
