@@ -94,7 +94,8 @@ function PiTest (component, digits) { // eslint-disable-line no-unused-vars
       var data = e.data
       test.results.push({
         ft: data.endTime,
-        tt: round(data.timeTaken / 1e3, 2)
+        tt: round(data.timeTaken / 1e3, 2),
+        tid: worker.id
       })
 
       if (test.interrupted) {
@@ -170,7 +171,7 @@ function PiTest (component, digits) { // eslint-disable-line no-unused-vars
     // _run(addRealListener, setupRealEventHandlers, test.digits);
     for (var i = 0; i < test.numWebWorkers; i++) {
       var worker = createPiWebWorker()
-      worker.id = `worker-${i}`
+      worker.id = i
       addRealListener(worker)
       test.workers[i] = worker
     }
