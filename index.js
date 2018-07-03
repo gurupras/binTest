@@ -466,14 +466,7 @@ app.get('/device-rank', function (req, res) {
 })
 
 
-var exptValidRateLimiter = new RateLimit({
-  windowMs: 15*60*1000,
-  max: 20,
-  delayMs: 0
-})
-
-app.get('/is-experiment-valid', exptValidRateLimiter, (req, res) => {
-  const exptID = req.query.experimentID
+async function isExperimentValid (exptID) {
   const query = {
     experimentID: exptID,
   }
@@ -483,26 +476,44 @@ app.get('/is-experiment-valid', exptValidRateLimiter, (req, res) => {
     type: 'expt-data',
     experimentID: exptID
   })
-  mongo.query(mongoDBQuery).then((result) => {
+
+  const result = await mongo.query(mongoDBQuery)
+  return new Promise((resolve, reject) => {
     result.toArray((err, docs) => {
       if (err) {
         console.log(err && err.stack)
-        return res.status(500).send(err.message)
+        return reject(err)
       }
       console.log(`docs.length=${docs.length}`)
       if (docs.length === 0) {
-        console.log(`ExperimentID: ${exptID} not found!`)
-        return res.status(500).send(JSON.stringify({
-          error: 'Invalid experimentID'
-        }))
+        return reject(new Error(`Invalid experimentID`))
       }
       const doc = docs[0]
       var result = {
+        experimentID: doc.experimentID,
         valid: doc.valid,
         validityReasons: doc.validityReasons
       }
-      res.send(JSON.stringify(result))
+      resolve(result)
     })
+  })
+}
+
+var exptValidRateLimiter = new RateLimit({
+  windowMs: 15*60*1000,
+  max: 20,
+  delayMs: 0
+})
+
+app.get('/is-experiment-valid', exptValidRateLimiter, (req, res) => {
+  const exptID = req.query.experimentID
+
+  isExperimentValid(exptID).then((result) => {
+    res.send(JSON.stringify(result))
+  }).catch((err) => {
+    res.status(500).send(JSON.stringify({
+      error: err.message
+    }))
   })
 })
 
@@ -637,6 +648,53 @@ app.get('/cpu-config', function (req, res) {
       }
     }
   )
+})
+
+var crowdsourceSubmissionRateLimiter = new RateLimit({
+  windowMs: 15*60*1000,
+  max: 20,
+  delayMs: 0
+})
+
+app.post('/crowdsource', crowdsourceSubmissionRateLimiter, (req, res) => {
+  const data = req.body
+  const mongoData = {
+    type: 'crowdsource-data',
+    experimentID: data.experimentID.split(','),
+    emailID: data.emailID,
+    'learnt-something-new': data['learnt-something-new'],
+    'interested-in-rank': data['interested-in-rank']
+  }
+
+  const promises = mongoData.experimentID.map(async (exptID) => {
+    try {
+      return await isExperimentValid(exptID)
+    } catch (e) {
+      return undefined
+    }
+  })
+  let successResponse = ['Thank you for your participation.']
+  let promise
+  Promise.all(promises).then((data) => {
+    validExperiments = data.filter(e => !!e && e.valid).map(e => e.experimentID)
+    console.log(`ValidExperiments: ${JSON.stringify(validExperiments)}`)
+    mongoData.experimentID = validExperiments
+    if (validExperiments.length === 0) {
+      successResponse.push('Unfortunately, none of the entered experiment IDs were valid.')
+    }
+    if (validExperiments.length > 0) {
+      promise = mongo.insertDocument(mongoData)
+    } else {
+      promise = new Promise((resolve, reject) => {
+        resolve()
+      })
+    }
+    promise.then(() => {
+      res.send(successResponse.join('<br>'))
+    }).catch((e) => {
+      res.status(500).send(`Failed: ${e}`)
+    })
+  })
 })
 
 http.listen(HTTP_PORT, function () {
