@@ -4,9 +4,8 @@ import Index from '@/components/index'
 import DeviceInfo from '@/components/device-info'
 import CPUBinInfo from '@/components/cpu-bin-info'
 import TestDevice from '@/components/test-device'
-import SweepTest from '@/components/sweep-test'
 import TestResults from '@/components/test-results'
-import PrivacyPolicy from '@/components/privacy-policy'
+import SubmissionForm from '@/components/submission-form'
 
 Vue.use(Router)
 
@@ -33,19 +32,14 @@ export default new Router({
       component: TestDevice
     },
     {
-      path: '/sweep-test',
-      name: 'sweep-test',
-      component: SweepTest
-    },
-    {
       path: '/test-results',
       name: 'test-results',
       component: TestResults
     },
     {
-      path: '/privacy-policy',
-      name: 'privacy-policy',
-      component: PrivacyPolicy
+      path: '/crowdsource',
+      name: 'crowdsource',
+      component: SubmissionForm
     }
   ]
 })

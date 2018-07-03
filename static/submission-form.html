@@ -1,0 +1,453 @@
+<!-- HIT template: DataCollection-v3.0 -->
+<!-- The following snippet enables the 'responsive' behavior on smaller screens -->
+<meta content="width=device-width,initial-scale=1" name="viewport" />
+<div id="alert-warning-template" style="display: none;">
+  <div class="alert alert-danger">
+    <strong class="alert-expt-id">exptID</strong>
+    <span class="alert-reasons">reasons</span>
+  </div>
+</div>
+<div id="alert-success-template" style="display: none;">
+  <div class="alert alert-success">
+    <strong class="alert-expt-id">exptID</strong>
+    <span>OK!</span>
+  </div>
+</div>
+
+<section class="container" id="DataCollection">
+  <!-- Instructions -->
+  <div class="row">
+    <div class="col-xs-12 col-md-12">
+      <div class="panel panel-primary">
+        <!-- WARNING: the ids "collapseTrigger" and "instructionBody" are being used to enable expand/collapse feature --><a class="panel-heading" href="javascript:void(0);" id="collapseTrigger"><strong>Participation Instructions</strong> <span class="collapse-text">(Click to collapse)</span> </a>
+        <div class="panel-body" id="instructionBody">
+          <ul>
+            <li>Download and install the <a href="https://play.google.com/store/apps/details?id=edu.buffalo.cse.phonelab.smartphonesexposed" target="_blank">smartphone.exposed app</a> from Google Play</li>
+            <li>Follow the instructions on the app to disable Android Doze if necessary</li>
+            <li>Click on &#39;Test Device&#39; and ensure that your phone
+              <ul>
+                <li>Is not charging</li>
+                <li>Has more than 80% charge</li>
+              </ul>
+            </li>
+            <li>Click on the &#39;Start Test&#39; button to start the test
+              <ul>
+                <li>The test does not require your active participation</li>
+                <li>Just start the experiment and set aside your phone</li>
+                <li><b>It is necessary that you not interact with the device while the test is in progress</b></li>
+                <li>The test takes approximately 18 minutes to finish and will chime to let you know that it&#39;s done</li>
+              </ul>
+            </li>
+            <li>Once completed, the app should show you the results of your test</li>
+            <li>Enter the Experiment ID from the results into this form</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-8 col-sm-offset-2">
+      <h2>Important:</h2>
+
+      <ul class="important">
+        <li>If you're using a non-rooted device running Android Oreo, you will not be able to participate</li>
+        <li>Please take some time to ensure that you enter the Experiment ID correctly</li>
+        <ul>
+          <!-- <li>You will not be entered to win a Giftcard if <i>none</i> of the entered  Experiment IDs are correct</li> -->
+        </ul>
+      </ul>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-8 col-sm-offset-2">
+      <h4>Additional Instructions</h4>
+
+      <ul>
+        <li>You can submit multiple experiment IDs by separating them with a comma
+          <ul>
+            <li>Your submission will be approved if <i>at least</i> one of the experiment IDs is valid</li>
+            <li>Each valid experiment ID will earn you one entry up to a maximum of 3 entries to win the Giftcard</li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="row" id="workContent" style="margin-top: 1.2em;">
+    <div class="col-sm-8 col-sm-offset-2">
+      <p style="font-weight: bold; font-size: 1.1em;">
+        You can check if an Experiment ID is correct by typing a ',' (comma) after the Experiment ID.<br>
+        The Submit button will show up once you enter at least one Experiment ID.
+      </p>
+      <form method="POST" action="/api/crowdsource" class="needs-validation" id="form">
+        <div class="form-group">
+          <div class="tags" id="tags">
+            <p>dummy tag</p>
+          </div>
+
+          <div id="alerts">
+            <p>all alerts</p>
+          </div>
+
+          <div>
+            <label for="experimentID">Experiment ID:</label>
+            <input class="form-control" id="experimentID" name="experimentID" placeholder="Enter your experiment IDs here. You can enter multiple IDs by separating them with a comma" type="text" style="display: none;"/>
+            <input class="form-control" id="fakeExperimentID" name="fakeExperimentID" placeholder="Enter your experiment IDs here. You can enter multiple IDs by separating them with a comma" type="text"/>
+          </div>
+
+          <div>
+            <label for="emailID">Email:</label>
+            <input class="form-control" id="emailID" name="emailID" placeholder="Enter your email ID" type="text" required />
+          </div>
+        </div>
+
+        <div class="form-group"><span class="title">I learnt something new about smartphones</span>
+          <div class="radio-group">
+            <div class="radio-inline"><label><input class="form-check-input" name="learnt-something-new" required="required" type="radio" value="yes" /> Yes </label></div>
+            <div class="radio-inline"><label><input class="form-check-input" name="learnt-something-new" type="radio" value="no" /> No </label></div>
+          </div>
+        </div>
+
+        <div class="form-group"><span class="title">I'm interested to know how my device performs in comparison to other devices</span>
+
+          <div class="radio-group">
+            <div class="radio-inline"><label><input class="form-check-input" name="interested-in-rank" required="required" type="radio" value="yes" /> Yes </label></div>
+            <div class="radio-inline"><label><input class="form-check-input" name="interested-in-rank" type="radio" value="no" /> No </label></div>
+          </div>
+        </div>
+        <!-- End Instructions -->
+        <!-- Data Collection Layout -->
+
+        <button id="submitButton" class="btn btn-primary center-block" style="margin-top: 3em;">Submit</button>
+      </form>
+    </div>
+  </div>
+</section>
+<section id="SubmitResult">
+  <div class="row" id="workContent" style="margin-top: 1.2em;">
+    <div class="col-sm-8 col-sm-offset-2">
+      <div class="center-block">
+        <h3 id="submitResultText"></h3>
+        </div>
+    </div>
+  </div>
+</section>
+<!-- End Data Collection Layout -->
+<!-- Please note that Bootstrap CSS/JS and JQuery are 3rd party libraries that may update their url/code at any time. Amazon Mechanical Turk (MTurk) is including these libraries as a default option for you, but is not responsible for any changes to the external libraries -->
+<!-- External CSS references -->
+<link crossorigin="anonymous" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" integrity="sha384-IS73LIqjtYesmURkDE9MXKbXqYA8rvKEp/ghicjem7Vc3mGRdQRptJSz60tvrB6+" rel="stylesheet" />
+<!-- Open internal style sheet -->
+<style type="text/css">
+  #collapseTrigger {
+    color: #fff;
+    display: block;
+    text-decoration: none;
+  }
+
+  #submitButton {
+    white-space: normal;
+  }
+
+  .image {
+    margin-bottom: 15px;
+  }
+
+  .form-check-label {
+    padding-left: 0.4em;
+  }
+
+  .form-group>.title {
+    font-weight: bold;
+    /*margin-right: 2em;*/
+  }
+
+  .radio-inline label {
+    font-weight: normal;
+    margin: 0 0.5em;
+  }
+
+  .form-group .radio-group {
+    float: right;
+  }
+
+  .alert.alert-danger {
+    margin-bottom: 5px;
+  }
+</style>
+<!-- End internal style sheet -->
+<!-- External JS references -->
+<script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s=" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js" integrity="sha384-s1ITto93iSMDxlp/79qhWHi+LsIi9Gx6yL+cOKDuymvihkfol83TYbLbOw+W/wv4" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.js" crossorigin="anonymous"></script>
+<!-- Open internal javascript -->
+<script>
+  $(document).ready(function() {
+    // Instructions expand/collapse
+    var content = $('#instructionBody');
+    var trigger = $('#collapseTrigger');
+
+    // $('.collapse-text').text('(Click to expand)');
+    trigger.click(function() {
+      content.toggle();
+      var isVisible = content.is(':visible');
+      if (isVisible) {
+        $('.collapse-text').text('(Click to collapse)');
+      } else {
+        $('.collapse-text').text('(Click to expand)');
+      }
+    });
+    trigger.click()
+    // end expand/collapse
+  });
+</script>
+<!-- Close internal javascript -->
+<!-- Tags -->
+<style type="text/css">
+  .tags .tag.bad {
+    background-color: #f2dede;
+    border-color: #ebcccc;
+    color: #a94442;
+  }
+
+  /* A lot of this was borrowed from
+ * https://olahol.github.io/react-tagsinput/
+*/
+
+  .tags {
+    margin: 0 0 1em 0;
+  }
+
+  .tags .tag {
+    display: table;
+    background: #cde69c;
+    color: #638421;
+    padding: 2px;
+    margin: 0 5px 5px 0;
+    border: 1px solid #a5d24a;
+    border-radius: 2px;
+    font: inherit;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    transition: all 0.1s ease;
+  }
+
+  .tag .close-tag {
+    vertical-align: middle;
+    float: right;
+    margin-left: 8px;
+  }
+
+  .tag .close-tag::before {
+    font-weight: bold;
+    content: "x";
+  }
+
+  .tag .close-tag:hover {
+    float: right;
+    display: inline-block;
+    cursor: pointer;
+    /*   padding:2px 5px; */
+  }
+</style>
+<script type="text/javascript">
+function updateSubmitButtonDisplay () {
+  if ($('#experimentID').val() || $('#fakeExperimentID').val()) {
+      $('#submitButton').show()
+  } else {
+    $('#submitButton').hide()
+  }
+}
+const hideSubmitInterval = setInterval(() => {
+  const submitButton = document.querySelector('#submitButton')
+  if (!submitButton) {
+    return
+  }
+  clearInterval(hideSubmitInterval)
+  $(submitButton).hide()
+}, 30)
+
+
+function tagInput (el, tags) {
+  const tagsDict = {}
+  function createTag (content) {
+    if (tagsDict[content]) {
+      return
+    }
+    const container = document.createElement('div')
+    container.dataset.value = content
+    container.classList.add('tag')
+    container.addEventListener('remove', (e) => {
+      removeTag(container)
+    })
+    const contentSpan = document.createElement('span')
+    contentSpan.textContent = content
+    container.appendChild(contentSpan)
+    const closeBtn = document.createElement('span')
+    closeBtn.classList.add('close-tag')
+    closeBtn.addEventListener('click', () => {
+      removeTag(container)
+    })
+    container.appendChild(closeBtn)
+    tags.appendChild(container)
+    const evt = new CustomEvent('new-tag', {
+      detail: {
+        data: content,
+        node: container
+      }
+    })
+    tagsDict[content] = true
+    tags.dispatchEvent(evt)
+  }
+
+  function handleKeyEvent (e) {
+    const keyCode = e.keyCode || e.which
+    var content = e.target.value.split(',')
+    content = content.map(e => e.replace(',', ''))
+    content = content.filter(e => e.length !== 0)
+
+    switch (keyCode) {
+      case 13:
+      case 188: // comma
+        if (e.shiftKey) {
+          break
+        }
+        content.forEach(e => createTag(e))
+        e.target.value = ''
+        break
+      case 8: // backspace
+        if (e.target.value === '') {
+          const lastTag = tags.childNodes[tags.childNodes.length - 1]
+          removeTag(lastTag)
+        }
+        break
+    }
+  }
+
+  const keyEvents = ['input', 'keyup']
+  keyEvents.forEach((evt) => {
+    el.addEventListener(evt, (e) => {
+      handleKeyEvent(e)
+    })
+  })
+
+  const otherEvents = ['change', 'focusout']
+  otherEvents.forEach((evt) => {
+    el.addEventListener(evt, (e) => {
+      var content = e.target.value.split(',')
+      content = content.map(e => e.replace(',', ''))
+      content = content.filter(e => e.length !== 0)
+      content.forEach(e => createTag(e))
+      e.target.value = ''
+    })
+  })
+
+  function removeTag (el) {
+    const content = el.dataset ? el.dataset.value : undefined
+    if (!content) {
+      return
+    }
+    const evt = new CustomEvent('remove-tag', {
+      detail: {
+        data: content
+      }
+    })
+    delete tagsDict[el.dataset.value]
+    tags.dispatchEvent(evt)
+    el.remove()
+  }
+}
+</script>
+<!-- Convert experimentID input to tag -->
+<script type="text/javascript">
+  // First  hide the alert template
+  // Now clear out alerts
+  $('#alerts').children().remove()
+  // Now clear out tags
+  $('#tags').children().remove()
+
+
+  const tagsDict = {}
+  const tags = document.querySelector('#tags')
+  tagInput(document.querySelector('#fakeExperimentID'), tags)
+  $(tags).on('new-tag', (e) => {
+    const tag = e.detail.node
+    tagsDict[e.detail.data] = {}
+    $('#experimentID').val(Object.keys(tagsDict).join(','))
+    // Show Submit button only if experimentID is non-empty
+    updateSubmitButtonDisplay()
+    axios({
+      method: 'GET',
+      url: 'https://smartphone.exposed/api/is-experiment-valid',
+      params: {
+        experimentID: encodeURIComponent(e.detail.data)
+      }
+    }).then((response) => {
+      const data = response.data
+      tagsDict[e.detail.data] = {
+        valid: data.valid
+      }
+      if (!data.valid) {
+        throw new Error(`<ul>${data.validityReasons.join('<li>')}</ul>`)
+      }
+      const alert = $($('#alert-success-template').html())
+      alert.attr('id', e.detail.data)
+      alert.find('.alert-expt-id').text(e.detail.data)
+      alert.appendTo($('#alerts'))
+    }).catch((err) => {
+      const message = err.response ? err.response.data.error : err.message
+      tag.classList.add('bad')
+      const alert = $($('#alert-warning-template').html())
+      alert.attr('id', e.detail.data)
+      alert.find('.alert-expt-id').text(e.detail.data)
+      alert.find('.alert-reasons').html(message)
+      alert.appendTo($('#alerts'))
+    })
+  })
+  $(tags).on('remove-tag', (e) => {
+    const id = e.detail.data
+    $(`#${id}`).remove()
+    delete tagsDict[id]
+    $('#experimentID').val(Object.keys(tagsDict).join(','))
+    // Show Submit button only if experimentID is non-empty
+    updateSubmitButtonDisplay()
+  })
+
+  // $('#submitButton').click((e) => {
+  //   e.stopImmediatePropagation()
+  //   e.preventDefault()
+  //   // debugger
+  // })
+
+  const form = document.querySelector('#form')
+  form.onsubmit = function (e) {
+  // stop the regular form submission
+  e.preventDefault();
+
+  // collect the form data while iterating over the inputs
+  var data = {};
+  for (var i = 0, ii = form.length; i < ii; ++i) {
+    var input = form[i];
+    if (input.name) {
+      data[input.name] = input.value;
+    }
+  }
+
+  debugger
+  axios.post(form.action, data, {
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }).then((response) => {
+    $('#submitResultText').html(`${response.data}`)
+  }).catch((response) => {
+    $('#submitResultText').html(`${response.data}`)
+  }).finally(() => {
+    $('#DataCollection').hide()
+    $('#SubmitResult').show()
+  })
+};
+</script>
