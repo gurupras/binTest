@@ -1,0 +1,39 @@
+hammerhead: &SD800 Qualcomm MSM8974 Snapdragon 800
+MSM8974: &SD801 Qualcomm MSM8974AC Snapdragon 801
+APQ8084: &SD805 Qualcomm Snapdragon 805
+shamu: *SD805
+msm8992: &SD808 Qualcomm MSM8992 Snapdragon 808
+bullhead: *SD808
+venice: *SD808
+msm8994: &SD810 Qualcomm MSM8994 Snapdragon 810
+angler: *SD810
+msm8996: &SD820 Qualcomm MSM8996 Snapdragon 820
+sailfish: &SD821 Qualcomm MSM8996 Snapdragon 821
+marlin: *SD821
+msm8998: &SD835 Qualcomm MSM8998 Snapdragon 835
+walleye: *SD835
+sdm845: &SD845 Qualcomm SDM845 Snapdragon 845
+
+msm8909: &SD210 Qualcomm MSM8909 Snapdragon 210
+msm8916: &SD410 Qualcomm MSM8916 Snapdragon 410
+msm8937_32: &SD435 Qualcomm MSM8940 Snapdragon 435
+msm8952: &SD617 Qualcomm MSM8952 Snapdragon 617
+msm8953: &SD625 Qualcomm MSM8953 Snapdragon 625
+MSM8960: Qualcomm MSM8960 Snapdragon S4 Plus
+universal5420: &EXY5420 Exynos 5420 Octa
+universal7420: &EXY7420 Exynos 7420 Octa
+universal7570: &EXY7570 Exynos 7570 Quad
+universal7870: &EXY7870 Exynos 7870 Octa
+universal8895: &EXY8895 Exynos 8895 Octa
+universal9810: Exynos 9810 Octa
+universal8890: &EXY8890 Exynos 8890 Octa
+SM-N935F: *EXY8895
+
+hi3660: &HS960 HiSilicon Kirin 960
+hi6210sft: &HS620 HiSilicon Kirin 620
+
+
+mt6735: &MTK6735 Mediatek MT6735
+R1_HD: *MTK6735
+sc8830: &SC9830 Spreadtrum SC9830
+SC9830I: *SC9830
