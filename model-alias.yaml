@@ -1,0 +1,58 @@
+AOSP on HammerHead: Nexus 5
+hammerhead: Nexus 5
+shamu: Nexus 6
+bullhead: Nexus 5X
+angler: Nexus 6P
+
+ONEPLUS A3000: OnePlus 3
+ONEPLUS A5000: &OP5 OnePlus 5
+OnePlus5: *OP5
+OnePlus5T: OnePlus 5T
+ONEPLUS A6003: OnePlus 6
+
+Moto G (4): Motorola Moto G4
+
+SM-N900: &SMSG_GLXY_NOTE3 Samsung Galaxy Note 3
+SM-N910T: &SMSG_GLXY_NOTE4 Samsung Galaxy Note 4
+Galaxy Note4: *SMSG_GLXY_NOTE4
+
+SM-N920V: &SMSG_GLXY_NOTE5 Samsung Galaxy Note5
+Galaxy Note5: *SMSG_GLXY_NOTE5
+
+SM-G900P: &SMSG_GLXY_S5 Samsung Galaxy S5
+Galaxy S5: *SMSG_GLXY_S5
+SAMSUNG-SM-G900A: *SMSG_GLXY_S5
+
+SAMSUNG-SM-G930A: &SMSG_GLXY_S7 Samsung Galaxy S7
+SAMSUNG-SM-G891A: *SMSG_GLXY_S7
+Galaxy S7: *SMSG_GLXY_S7
+SM-G930V: *SMSG_GLXY_S7
+SM-G930F: *SMSG_GLXY_S7
+SM-G935F: Samsung Galaxy S7 Edge
+
+Galaxy Note8: &SMSG_GLXY_NOTE8 Samsung Galaxy Note8
+SM-A9100: Samsung Galaxy A9 Pro
+
+Galaxy S8+: &SMSG_GLXY_S8+ Samsung Galaxy S8+
+SM-G960U: &SMSG_GLXY_S9 Samsung Galaxy S9
+SM-G965F: &SMSG_GLXY_S9+ Samsung Galaxy S9+
+
+HTC6535LVW: HTC One M9
+Infinix X572: Infinix Note 4
+LG-LS777: LG Stylo 3
+LG-M255: LG K20
+LGUS997: LG G6
+LML413DL: LG Premier Pro LTE
+Moto G (5S) Plus: Motorola Moto G5S Plus
+VS996: LG V30
+XT1575: Motorola Moto X Style
+XT1585: Motorola DROID Turbo 2
+Moto G(4): Motorola Moto G4
+STV100-1: BlackBerry Priv
+G8142: Sony Xperia XZ Premium
+Redmi 4X: Xiaomi Redmi 4 (4X)
+VS425PP: LG Optimus Zone 3
+SM-J111M: Samsung Galaxy J1 Ace
+SM-J710MN: Samsung Galaxy J7 (2016)
+MHA-L29: Huawei Mate 9
+ALE-L23: Huawei P8 Lite
