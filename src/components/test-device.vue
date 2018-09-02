@@ -328,8 +328,6 @@ export default {
       var testResults = this.test.getResult()
       this.testResults = testResults
       testResults['testType'] = 'test-type-v1'
-      testResults['ambientTemperature'] = this.temp
-      testResults['sweepIteration'] = this.iter
       testResults['startTemperature'] = this.exptStartTemp
       testResults['cooldownData'] = this.cooldownData
       testResults['endTemperature'] = this.cooldownData.last.tempAfterSleep
