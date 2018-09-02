@@ -697,6 +697,10 @@ app.post('/crowdsource', crowdsourceSubmissionRateLimiter, (req, res) => {
   })
 })
 
+app.get('/timestamp', (req, res) => {
+    res.send({timestamp: moment().local().valueOf()})
+})
+
 http.listen(HTTP_PORT, function () {
   console.log('smartphones.exposed core-app listening for HTTP on port %d', HTTP_PORT)
 })
