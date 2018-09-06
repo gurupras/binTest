@@ -20,9 +20,11 @@ export default {
       endAmbientTemperature: AndroidAPI.getEndTemp(),
       step: AndroidAPI.getStep(),
       numIterations: AndroidAPI.getNumIterations(),
+      cooldownVariant: AndroidAPI.getCooldownVariant(),
       currentAmbientTemperature: undefined,
       iteration: undefined,
-      timeDict: undefined
+      label: AndroidAPI.getLabel(),
+      timeMap: undefined
     }
   },
   computed: {
@@ -38,14 +40,21 @@ export default {
         return this.currentAmbientTemperature + 10
       }
     },
+    doCooldown () {
+      switch (this.cooldownVariant) {
+        case 'simple':
+          return AndroidAPI.sleepForDuration(this.test.getTestObj().cooldownDurationMS)
+        case 'cpu-temp':
+          return AndroidAPI.waitUntilAmbientTemperature(this.getDesiredCPUTemperature(), null)
+      }
+    },
     setupEventHandlers () {
       const self = this
 
       console.log(`Using sweep-test handlers`)
 
-      this.$on('beforeStartTest', () => {
-        self.checkRequisites()
-        self.startTest()
+      this.$on('beforeStartTest', async () => {
+        // Tell server to start recording thermabox state
       })
 
       this.$on('onTestObjectCreated', (test) => {
@@ -55,14 +64,8 @@ export default {
       })
 
       this.$on('beforeTest', () => {
-        var systemTime = AndroidAPI.systemTime()
-        var upTime = AndroidAPI.upTime()
-        var jsTime = Date.now()
-        self.timeDict = {
-          systemTime: systemTime,
-          upTime: upTime,
-          jsTime: jsTime
-        }
+        self.timeMap = JSON.parse(AndroidAPI.getAllTimes())
+        self.timeMap.jsTime = Date.now()
 
         function padDate (val) {
           return ('0' + val).slice(-2)
@@ -84,21 +87,24 @@ export default {
 
       this.$on('beforeStartExperiment', () => {
         AndroidAPI.post('http://smartphone.exposed/api/info', JSON.stringify({msg: `Starting experiment`}))
-        self.startExperiment()
       })
 
       this.$on('beforeWorkload', () => {
-        self.test.run()
+        AndroidAPI.updateThermaboxRecorder('start')
       })
 
-      this.$on('onResultAvailable', (testResult) => {
-        testResult.testType = 'sweep-test-vue-v1'
+      this.$on('onResultAvailable', async (testResult) => {
+        if (self.label) {
+          testResult.label = self.label
+        }
+        testResult.testType = 'sweep-test-vue-v2'
+        testResult.thermaboxData = JSON.parse(AndroidAPI.updateThermaboxRecorder('stop'))
         testResult.ambientTemperature = self.currentAmbientTemperature
         testResult.iteration = self.iteration
+        testResult.timeMap = self.timeMap
       })
 
       this.$on('beforeCleanup', () => {
-        self.testCleanup()
       })
 
       this.$on('afterCleanup', () => {
@@ -116,6 +122,10 @@ export default {
       })
     },
     checkThermaboxStability (updatedLimits) {
+      if (this.debug) {
+        return this.$emit('thermabox-stable')
+      }
+
       const self = this
       var stableStart
       var lastLogTime = Date.now()
@@ -152,6 +162,10 @@ export default {
     this.iteration = Number(query.iteration)
     if (this.currentAmbientTemperature > this.endAmbientTemperature) {
       window.location.href = 'about:blank'
+    }
+
+    if (this.cooldownVariant === 'cpu-temp') {
+      // this.doWarmupBeforeCooldown = false
     }
 
     const newQuery = Object.assign({}, query)
