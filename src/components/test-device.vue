@@ -49,7 +49,7 @@
                       </div>
                     </div>
                   </div>
-                  <a class="waves-effect waves-light btn btn-small silver page-option" :class="[runningTest ? 'disabled' : '', haveTemperatureSensor ? '' : 'disabled', testConditionsSatisfied ? '' : 'disabled']" @click="runTest">Start Test</a>
+                  <a class="waves-effect waves-light btn btn-small silver page-option" :class="startTestClasses" @click="runTest">Start Test</a>
                   <a class="waves-effect waves-light btn btn-small silver page-option" v-show="runningTest" :class="[interrupting ? 'disabled' : '', runningTest ? '' : 'disabled', haveTemperatureSensor ? '' : 'disabled']" @click="interruptTest">Interrupt Test</a>
                 </div>
               </div>
@@ -122,6 +122,12 @@ export default {
     },
     testConditionsSatisfied () {
       return this.checkIsPluggedIn() && this.checkBatteryLevel()
+    },
+    startTestClasses () {
+      if (this.debug) {
+        return {}
+      }
+      return (this.runningTest || !this.haveTemperatureSensor || !this.testConditionsSatisfied) ? 'disabled' : ''
     }
   },
   watch: {
