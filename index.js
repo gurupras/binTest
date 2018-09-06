@@ -1,15 +1,25 @@
-var fs = require('fs')
-var path = require('path')
-var request = require('request')
-var express = require('express')
-var bodyParser = require('body-parser')
-var moment = require('moment')
-var compression = require('compression')
-var morgan = require('morgan')
-var util = require('util')
-var cors = require('cors')
-var httpRewrite = require('http-rewrite-middleware')
-var RateLimit = require('express-rate-limit')
+require = require('esm')(module)
+const fs = require('fs')
+const path = require('path')
+const request = require('request')
+const express = require('express')
+const bodyParser = require('body-parser')
+const moment = require('moment')
+const compression = require('compression')
+const morgan = require('morgan')
+const util = require('util')
+const cors = require('cors')
+const httpRewrite = require('http-rewrite-middleware')
+const RateLimit = require('express-rate-limit')
+
+const http = require('http')
+const https = require('https')
+const yaml = require('js-yaml')
+const MongoDB = require('./mongo').default
+const FonoAPI = require('./fonoapi').default
+const config = require('./appconfig').default
+const thermabox = require('./src/js/thermabox.js').default
+const PeriodicTask = require('./periodic-task').default
 
 var app = express()
 app.enable('trust-proxy')
@@ -24,33 +34,19 @@ app.use(httpRewrite.getMiddleware([
   }
 ]))
 
-const http = require('http').createServer(app)
-const yaml = require('js-yaml')
+var httpServer
+var httpsServer
+
+httpServer = http.createServer(app)
 
 var HTTPS_PORT = 8112
 var HTTP_PORT = HTTPS_PORT + 100
 
-var config
-try {
-  config = yaml.safeLoad(fs.readFileSync('config.yaml', 'utf8'))
-} catch (e) {
-  console.log('Failed to read config.yaml: ' + e)
-  process.exit(-1)
-}
-
-var httpsConfig
 if (config.https) {
-  httpsConfig = {
-    key: fs.readFileSync(config.https.key),
-    cert: fs.readFileSync(config.https.cert)
-  }
-  var https = require('https').createServer(httpsConfig, app)
+  httpsServer = https.createServer(config.https, app)
 }
 
-var mongo = require('./mongo.js')(config.mongodb.url, config.mongodb.database)
-
-const FonoAPI = require('./fonoapi.js')
-
+const mongo = new MongoDB(config.mongodb.url, config.mongodb.database)
 const fonoapi = new FonoAPI(config.fonoapi_key)
 
 var temperatureKeys
@@ -114,27 +110,13 @@ function extractFromQueryAsJSON(v) {
 app.get('/device-description', (req, res) => {
   var qs = req.query
   var deviceID = extractFromQueryAsJSON(qs.deviceID)
-  console.log(`deviceID=${JSON.stringify(deviceID)}`)
+  // console.log(`deviceID=${JSON.stringify(deviceID)}`)
 
-  // See if this model has an alias
-  var model
-  if (deviceID.DeviceName) {
-    model = deviceID.DeviceName.deviceName
-  } else {
-    model = deviceID['Build.MODEL']
-  }
-  try {
-    var modelAliases = yaml.safeLoad(fs.readFileSync('model-alias.yaml', 'utf-8'))
-    model = modelAliases[model] || model
-  } catch (e) {
-  }
-  console.log(`final model=${model}`)
-
-  fonoapi.query(model).then((result) => {
-    res.send(JSON.stringify(result))
+  fonoapi.query(deviceID).then((result) => {
+    res.send(result)
   }).catch((err) => {
     console.log(JSON.stringify(err))
-    res.send(JSON.stringify(err))
+    res.send(JSON.parse(JSON.stringify(err)))
   })
 })
 
@@ -701,12 +683,52 @@ app.get('/timestamp', (req, res) => {
     res.send({timestamp: moment().local().valueOf()})
 })
 
-http.listen(HTTP_PORT, function () {
+const thermaboxData = {}
+const thermaboxIntervals = {}
+app.get('/record-thermabox', async (req, res) => {
+  const qs = req.query
+  const { experimentID, event } = qs
+  if (!experimentID || !event) {
+    return res.status(400).send('Bad Request')
+  }
+  var task
+  var result
+  switch (event) {
+    case 'start':
+      thermaboxData[experimentID] = {}
+      thermaboxData[experimentID].limits = await thermabox.getLimits()
+      thermaboxData[experimentID].data = []
+
+      task = new PeriodicTask(async () => {
+        const temperature = await thermabox.getTemperature()
+        const state = await thermabox.getState()
+        thermaboxData[experimentID].data.push({
+          timestamp: moment().local().valueOf(),
+          temperature,
+          state
+        })
+      }, 300)
+      thermaboxIntervals[experimentID] = task
+      task.start()
+      result = {status: 'OK'}
+      break
+    case 'stop':
+      task = thermaboxIntervals[experimentID]
+      task && task.stop()
+      result = thermaboxData[experimentID]
+      delete thermaboxIntervals[experimentID]
+      delete thermaboxData[experimentID]
+      break
+  }
+  res.send(result)
+})
+
+httpServer.listen(HTTP_PORT, function () {
   console.log('smartphones.exposed core-app listening for HTTP on port %d', HTTP_PORT)
 })
 
-if (https) {
-  https.listen(HTTPS_PORT, function () {
+if (httpsServer) {
+  httpsServer.listen(HTTPS_PORT, function () {
     console.log('smartphones.exposed core-app listening for HTTPS on port %d', HTTPS_PORT)
   })
 }
