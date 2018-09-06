@@ -6,6 +6,7 @@ import CPUBinInfo from '@/components/cpu-bin-info'
 import TestDevice from '@/components/test-device'
 import TestResults from '@/components/test-results'
 import SubmissionForm from '@/components/submission-form'
+import SweepTest from '@/components/sweep-test'
 
 Vue.use(Router)
 
@@ -30,6 +31,11 @@ export default new Router({
       path: '/test-device',
       name: 'test-device',
       component: TestDevice
+    },
+    {
+      path: '/sweep-test',
+      name: 'sweep-test',
+      component: SweepTest
     },
     {
       path: '/test-results',
