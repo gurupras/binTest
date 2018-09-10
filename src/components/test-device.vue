@@ -99,7 +99,8 @@ export default {
       testResults: undefined,
       isPluggedIn: false,
       batteryLevel: 1.0,
-      clockDrift: []
+      clockDrift: [],
+      phases: []
     }
   },
   computed: {
@@ -164,7 +165,7 @@ export default {
           this.test.connectivityStateChanges.push({
             isPluggedIn: this.isPluggedIn,
             batteryLevel: this.batteryLevel,
-            now: new Date()
+            now: moment().local().valueOf()
           })
           this.test.setValid(false)
           if (this.isPluggedIn) {
@@ -219,12 +220,33 @@ export default {
     doCooldown () {
       return AndroidAPI.sleepForDuration(this.test.getTestObj().cooldownDurationMS)
     },
+    async runWarmupPhase () {
+      this.test.currentPhase = TestPhases.WARMUP
+      const start = moment().local().valueOf()
+      AndroidAPI.warmupAsync(this.warmupDuration, `
+        window.${this.exportName}.$emit('warmup-done')
+      `)
+      await this.waitForEvent('warmup-done')
+      const end = moment().local().valueOf()
+      this.phases.push({
+        name: 'warmup',
+        start,
+        end
+      })
+    },
     runCooldownPhase () {
       try {
         this.log('Running cooldown')
         this.test.currentPhase = TestPhases.COOLDOWN
         this.checkScreenRequisites()
+        const start = moment().local().valueOf()
         var result = this.doCooldown()
+        const end = moment().local().valueOf()
+        this.phases.push({
+          name: 'cooldown',
+          start,
+          end
+        })
         this.cooldownData = JSON.parse(result)
         const cooldownStartUpTime = result.startUpTime
         // Now, make sure the uptime hasn't elapsed by too much
@@ -236,6 +258,19 @@ export default {
         }
       } catch (e) {
         this.log(`Failed cooldown: ${e}`)
+      }
+    },
+    runWorkloadPhase () {
+      if (this.native) {
+        this.test.startTime = moment().local().valueOf()
+        var resultsStr = AndroidAPI.runWorkloadPi(15000, this.test.workloadDurationMS)
+        this.test.endTime = moment().local().valueOf()
+        var results = JSON.parse(resultsStr)
+        this.test.results = results
+        this.$emit('test-finished', this.test.results)
+      } else {
+        this.$emit('beforeWorkload')
+        this.test.run()
       }
     },
     uploadData (str) {
@@ -283,11 +318,11 @@ export default {
       this.$emit('onTestObjectCreated', test)
 
       this.$store.commit('navigationDisabled', true)
-      const start = Date.now()
+      const start = moment().local().valueOf()
       const totalMS = this.warmupDuration + ((this.workloadDurationMinutes + this.cooldownDurationMinutes) * 60 * 1000)
       AndroidAPI.setupTestProgress()
       this.progressInterval = setInterval(() => {
-        var now = Date.now()
+        var now = moment().local().valueOf()
         var pct = (((now - start) / totalMS) * 100) >> 0
         AndroidAPI.updateTestProgress(pct)
         self.$el.querySelector('#test-progress').style.width = `${pct}%`
@@ -297,7 +332,17 @@ export default {
       this.exptID = AndroidAPI.startExperiment()
       this.log(`Experiment ID: ${this.exptID}`)
       this.$emit('onExperimentIDAvailable', test, this.exptID)
-      this.$on('test-finished', this.onTestFinished)
+
+      this.$on('test-finished', (results = self.test.getResult()) => {
+        const start = results.startTime
+        const end = results.endTime
+        self.phases.push({
+          name: 'workload',
+          start,
+          end
+        })
+        self.onTestFinished(results)
+      })
 
       this.updateBackgroundCgroupCPUs()
       this.$emit('beforeTest')
@@ -320,37 +365,22 @@ export default {
       if (this.cooldownFirst) {
         if (this.doWarmupBeforeCooldown) {
           this.log(`Warming up device a little bit ...`)
-          this.test.currentPhase = TestPhases.WARMUP
-          AndroidAPI.warmupAsync(this.warmupDuration, `
-            window.${this.exportName}.$emit('warmup-done')
-          `)
-          await this.waitForEvent('warmup-done')
+          await this.runWarmupPhase()
         }
         this.runCooldownPhase()
       }
       var tempReading = JSON.parse(AndroidAPI.getTemperature())
       this.exptStartTemp = tempReading.temperature
       this.log(`Running workload`)
-      if (this.native) {
-        this.test.startTime = Date.now()
-        var resultsStr = AndroidAPI.runWorkloadPi(15000, this.test.workloadDurationMS)
-        this.test.endTime = Date.now()
-        var results = JSON.parse(resultsStr)
-        this.test.results = results
-        this.$emit('test-finished')
-      } else {
-        this.$emit('beforeWorkload')
-        this.test.run()
-      }
+      this.runWorkloadPhase()
     },
-    onTestFinished () {
+    onTestFinished (testResults) {
       if (!this.cooldownFirst) {
         this.runCooldownPhase()
       }
       this.test.currentPhase = TestPhases.FINISHED
       this.clockDrift.push(this.getClockMap())
       AndroidAPI.toast('Uploading logs')
-      var testResults = this.test.getResult()
       this.testResults = testResults
       testResults['testType'] = 'test-type-v1'
       testResults['startTemperature'] = this.exptStartTemp
@@ -364,6 +394,7 @@ export default {
         cooldownFirst: this.cooldownFirst,
         isFake: AndroidAPI.isFake || false
       }
+      testResults['phases'] = this.phases
       this.$emit('onResultAvailable', testResults)
 
       var key = this.uploadData(JSON.stringify(testResults))
@@ -417,8 +448,9 @@ export default {
       clearInterval(this.progressInterval)
       this.$el.querySelector('#test-progress').style.width = 0
       AndroidAPI.teardownTestProgress(!!wasInterrupted)
-      // Enable navigation
       this.runningTest = false
+      this.phases = []
+      // Enable navigation
       this.$store.commit('navigationDisabled', false)
       this.$emit('afterCleanup')
     },
