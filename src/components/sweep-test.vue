@@ -78,7 +78,8 @@ export default {
         console.log('Starting monsoon')
         AndroidAPI.startMonsoon(self.monsoonHost, self.monsoonPort, JSON.stringify({
           size: 1,
-          filepath: '/home/guru/workspace/smartphones.exposed/logs/' + filename
+          outdir: '/home/guru/workspace/smartphones.exposed/logs',
+          filename
         }))
         if (!self.debug) {
           console.log('Running powersync')
