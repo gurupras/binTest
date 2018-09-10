@@ -1,5 +1,6 @@
 <script>
 /* global AndroidAPI */
+import moment from 'moment'
 import URI from 'urijs'
 import { mapGetters } from 'vuex'
 import TestDevice from '@/components/test-device'
@@ -65,15 +66,15 @@ export default {
 
       this.$on('beforeTest', () => {
         self.timeMap = JSON.parse(AndroidAPI.getAllTimes())
-        self.timeMap.jsTime = Date.now()
+        self.timeMap.jsTime = moment().local().valueOf()
 
         function padDate (val) {
-          return ('0' + val).slice(-2)
+          return val.toString().padStart(2, '0')
         }
 
-        var now = new Date()
+        var now = moment().local()
         // var filename = 'monsoon-' + this.experimentID + '-' + now.getFullYear() + padDate(now.getMonth()) + padDate(now.getDate()) + ' ' + padDate(now.getHours()) + ':' + padDate(now.getMinutes()) + ':' + padDate(now.getSeconds()) + '.gz'
-        const filename = `monsoon-${self.exptID}-${now.getFullYear()}${padDate(now.getMonth())}${padDate(now.getDate())} ${padDate(now.getHours())}:${padDate(now.getMinutes())}:${padDate(now.getSeconds())}.gz`
+        const filename = `monsoon-expt_${self.iteration.toString().padStart(3, '0')}-${self.exptID}-${now.year()}${padDate(now.month())}${padDate(now.date())} ${padDate(now.hours())}:${padDate(now.minutes())}:${padDate(now.seconds())}.gz`
         console.log('Starting monsoon')
         AndroidAPI.startMonsoon(self.monsoonHost, self.monsoonPort, JSON.stringify({
           size: 1,
@@ -128,21 +129,21 @@ export default {
 
       const self = this
       var stableStart
-      var lastLogTime = Date.now()
+      var lastLogTime = moment().local().valueOf()
       const stablePeriod = updatedLimits ? 3 * 60 * 1000 : 30 * 1000
 
       const interval = setInterval(function () {
         thermabox.getState().then((state) => {
           console.log('Thermabox: state=' + state)
-          if (Date.now() - lastLogTime > 10 * 1000) {
+          if (moment().local().valueOf() - lastLogTime > 10 * 1000) {
             AndroidAPI.post('http://smartphone.exposed/api/info', JSON.stringify({msg: 'Thermabox state=' + state}))
-            lastLogTime = Date.now()
+            lastLogTime = moment().local().valueOf()
           }
           if (state === 'stable') {
             if (!stableStart) {
-              stableStart = Date.now()
+              stableStart = moment().local().valueOf()
             } else {
-              var now = Date.now()
+              var now = moment().local().valueOf()
               if ((now - stableStart) > stablePeriod) {
                 clearInterval(interval)
                 self.$emit('thermabox-stable')
