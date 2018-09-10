@@ -19,6 +19,22 @@ import fakeDevices from '@/js/fake-devices'
     // AndroidAPI.log('chromium', `[INFO:CONSOLE(43)] "${str}", source: undefined (43)`)
     old.apply(this, arguments)
   }
+
+  const extraFakeDevices = JSON.parse(localStorage.getItem('fakeDeviceIDs') || '{}')
+
+  window.addFakeDevice = (deviceID, key) => {
+    const extraFakeDevices = JSON.parse(localStorage.getItem('fakeDeviceIDs') || '{}')
+    key = key || `${deviceID['Build>MANUFACTURER']} ${deviceID.DeviceName.marketName}-${deviceID.IMEI.slice(-5)}`
+    const fixedDeviceID = {}
+    Object.keys(deviceID).forEach(key => {
+      const fixedKey = key.replace('>', '.')
+      fixedDeviceID[fixedKey] = deviceID[key]
+    })
+    fakeDevices[key] = fixedDeviceID
+    extraFakeDevices[key] = fixedDeviceID
+    localStorage.setItem('fakeDeviceIDs', JSON.stringify(extraFakeDevices))
+  }
+  Object.entries(extraFakeDevices).forEach(([key, deviceID]) => window.addFakeDevice(deviceID, key))
 })()
 
 function generateTemperatureData () {
@@ -45,18 +61,24 @@ var currentExperimentID
 const uploadData = {}
 
 const AndroidAPI = {
-  isFake: localStorage.getItem('smartphone.exposed:isFake'),
+  isFake: localStorage.getItem('isFake'),
   stockResponse: function () {
     return new Error('Please install the smartphone.exposed app from the PlayStore')
   },
   getDeviceID: function (callback) {
-    const device = localStorage.getItem('smartphone.exposed:fakeDevice')
-    var deviceID = fakeDevices[device]
-    if (!deviceID) {
-      deviceID = {
-        'Build.MANUFACTURER': '',
-        'Build.DeviceName': {
-          deviceName: ''
+    const fakeDeviceID = localStorage.getItem('fakeDeviceID')
+    var deviceID
+    if (fakeDeviceID) {
+      deviceID = JSON.parse(fakeDeviceID)
+    } else {
+      const device = localStorage.getItem('fakeDevice')
+      deviceID = fakeDevices[device]
+      if (!deviceID) {
+        deviceID = {
+          'Build.MANUFACTURER': '',
+          'Build.DeviceName': {
+            deviceName: ''
+          }
         }
       }
     }
