@@ -192,7 +192,7 @@ export default {
       this.error = undefined
       var self = this
       this.getTestResults(experimentID).then((data) => {
-        self.updateTestInfo(data.testInfo)
+        self.updateTestInfo(data.testInfo, data)
         self.updateTestRank(data.rankingData)
         self.testResult = data
       }).catch((err) => {
@@ -201,7 +201,7 @@ export default {
         this.loading = false
       })
     },
-    updateTestInfo (testInfo) {
+    updateTestInfo (testInfo, data) {
       this.testInfo = []
 
       // ----- BEGIN: Special field handling -----
@@ -229,6 +229,18 @@ export default {
           label: label,
           value: testInfo[key] || 'NA'
         })
+      }
+      // Add monsoon data if it exists
+      try {
+        const monsoonData = data.rawData.monsoonData
+        if (monsoonData) {
+          const workloadEnergy = monsoonData.experiments.filter(x => x.name === 'workload')[0]['energy']
+          this.testInfo.push({
+            label: 'Energy',
+            value: `${workloadEnergy.toFixed(2)} mJ`
+          })
+        }
+      } catch (e) {
       }
     },
     updateTestRank (rank) {
