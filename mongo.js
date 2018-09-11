@@ -50,6 +50,17 @@ class MongoDB {
     })
   }
 
+  async getResultAsArray (result) {
+    return new Promise((resolve, reject) => {
+      result.toArray((err, docs) => {
+        if (err) {
+          return reject(err)
+        }
+        resolve(docs)
+      })
+    })
+  }
+
   async close () {
     await this.db.close()
   }

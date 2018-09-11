@@ -67,7 +67,13 @@ if (process.env.NODE_ENV === 'test') {
     skip: function (req, res) { return true }
   }))
 } else {
-  app.use(morgan(':x-real-ip - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"'))
+  app.use(morgan(':x-real-ip - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"', {
+    skip: (req, res) => {
+      if (req.url.includes('/thermabox/')) {
+        return true
+      }
+    }
+  }))
 }
 
 function generateDeviceQuery (deviceID, extras) {
@@ -261,10 +267,7 @@ app.get('/generate-temperature-plot', (req, res) => {
 })
 
 var lastExptUploadTime
-app.post('/upload', function (req, res) {
-
-  console.log(`Received upload POST: type=${req.body.type}`)
-  var json = req.body
+async function upload (json) {
   // console.log(JSON.stringify(json));
   if (!config.upload_types.includes(json.type)) {
     console.log(`Invalid data type: ${json.type}! Valid types: ${JSON.stringify(config.upload_types)}`)
@@ -275,11 +278,18 @@ app.post('/upload', function (req, res) {
     lastExptUploadTime = moment().local().format()
   }
   // TODO: Check for fields
-  mongo.insertDocument(json).then((result) => {
+  return mongo.insertDocument(json)
+}
+
+app.post('/upload', async (req, res) => {
+  console.log(`Received upload POST: type=${req.body.type}`)
+  var json = req.body
+  try {
+    await upload(json)
     res.send('OK')
-  }).catch((err) => {
-    res.status(500).send('Failed to upload: ' + err + '\n' + err.stack)
-  })
+  } catch (err) {
+    res.send('Failed to upload: ' + err + '\n' + err.stack)
+  }
 })
 
 function post (opts) {
@@ -537,6 +547,45 @@ app.get('/is-experiment-valid', exptValidRateLimiter, (req, res) => {
       error: err.message
     }))
   })
+})
+
+app.get('/thermabox/query', async (req, res) => {
+  const { query } = req
+  // TODO: Get last 12 hours of data from mongoDB
+  // for this deviceID and ship it over to python to plot
+  const start = Number(query.start)
+  const end = Number(query.end)
+
+  var utcOffset = Number(query.utcOffset)
+
+  // console.log(`${JSON.stringify(deviceID)}`);
+  var mongoDBQuery = {
+    type: 'thermabox-data',
+    timestamp: {
+      $gte: start,
+      $lt: end
+    }
+  }
+  const result = await mongo.query(mongoDBQuery)
+  try {
+    const docs = await mongo.getResultAsArray(result.sort({$natural: 1}))
+    const data = docs.map(doc => ({state: doc.state, timestamp: doc.timestamp, temperature: doc.temperature}))
+    res.send(data)
+  } catch (e) {
+    console.log(err && err.stack)
+    return res.status(500).send(err.message)
+  }
+})
+
+app.post('/thermabox/update-state', async (req, res) => {
+  const state = req.body
+  state.type = 'thermabox-data'
+  try {
+    await upload(state)
+    res.send('OK')
+  } catch (e) {
+    res.status(500).send(`Failed to upload thermabox state: ${JSON.stringify(e)}`)
+  }
 })
 
 var lastThermaboxSetLimits
