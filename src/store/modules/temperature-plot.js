@@ -28,7 +28,7 @@ const state = {
         },
         scaleLabel: {
           display: true,
-          labelString: 'Temperature'
+          labelString: 'Temperature (°C)'
         }
       }]
     }
