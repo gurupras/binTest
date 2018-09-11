@@ -296,20 +296,50 @@ function post (opts) {
   })
 }
 
-app.get('/experiment-results', (req, res) => {
-  const deviceID = extractFromQueryAsJSON(req.query.deviceID)
-  const exptID = req.query.experimentID
-  const utcOffset = 0 //req.query.utcOffset
-  const query = {
-    deviceID: deviceID,
-    experimentID: exptID,
-    utcOffset: 0
-  }
-  console.log(`query=${JSON.stringify(query)}`)
+app.get('/experiment-data', async (req, res) => {
+  const { query } = req
+  const { experimentID } = req.query
 
   var mongoDBQuery = generateDeviceQuery({}, {
     type: 'expt-data',
-    experimentID: exptID
+    experimentID
+  })
+  const result = await mongo.query(mongoDBQuery)
+  result.toArray((err, docs) => {
+    if (err) {
+      console.log(err && err.stack)
+      res.status(500).send(err.message)
+      return
+    }
+    // TODO: Format test data into 3 components
+    // testInfo, testScore and testPlot and send it back
+    console.log(`docs.length=${docs.length}`)
+    if (docs.length === 0) {
+      console.log(`ExperimentID: ${experimentID} not found!`)
+      res.send(JSON.stringify({
+        error: 'Test not found. If you just completed the experiment, retry in some time as the logs may not have been uploaded yet'
+      }))
+      return
+    }
+
+    var result = JSON.parse(JSON.stringify(docs[0]))
+    delete result._id
+    res.send(result)
+  })
+})
+app.get('/experiment-results', (req, res) => {
+  var deviceID = extractFromQueryAsJSON(req.query.deviceID)
+  const experimentID = req.query.experimentID
+  const utcOffset = 0 //req.query.utcOffset
+  const query = {
+    deviceID,
+    experimentID,
+    utcOffset
+  }
+
+  var mongoDBQuery = generateDeviceQuery({}, {
+    type: 'expt-data',
+    experimentID
   })
   mongo.query(mongoDBQuery).then((result) => {
     result.toArray((err, docs) => {
@@ -322,16 +352,26 @@ app.get('/experiment-results', (req, res) => {
       // testInfo, testScore and testPlot and send it back
       console.log(`docs.length=${docs.length}`)
       if (docs.length === 0) {
-        console.log(`ExperimentID: ${exptID} not found!`)
+        console.log(`ExperimentID: ${experimentID} not found!`)
         res.send(JSON.stringify({
           error: 'Test not found. If you just completed the experiment, retry in some time as the logs may not have been uploaded yet'
         }))
         return
       }
+
       var result = JSON.parse(JSON.stringify(docs[0]))
       delete result._id
 
-      var plotInput = Object.assign(result, {deviceID: deviceID})
+      // We don't really use incoming deviceID and we shouldn't rely on it
+      // Instead, we use the result's deviceID, but fix the keys since
+      // dots were replaced with > while inserting into MongoDB
+      const fixedDeviceID = {}
+      Object.keys(result.deviceID).forEach(key => {
+        const fixedKey = key.replace('>', '.')
+        fixedDeviceID[fixedKey] = result.deviceID[key]
+      })
+      deviceID = fixedDeviceID
+      var plotInput = Object.assign(result, {deviceID})
 
       var testResults = {}
       var failed = false
@@ -346,8 +386,8 @@ app.get('/experiment-results', (req, res) => {
       var exptRankingPromise = post({
         url: 'http://localhost:10070/experiment-ranking',
         body: JSON.stringify({
-          deviceID: deviceID,
-          experimentID: exptID
+          deviceID,
+          experimentID
         }),
         gzip: true
       }).then((rank) => {
@@ -357,8 +397,8 @@ app.get('/experiment-results', (req, res) => {
       })
 
       var sanitizePromise = sanitizeTemperatures({
-        deviceID: deviceID,
-        utcOffset: utcOffset,
+        deviceID,
+        utcOffset,
         timestamps: result.temperatureData.timestamps,
         temperatures: result.temperatureData.temperatures
       }).then((body) => {
@@ -383,7 +423,7 @@ app.get('/experiment-results', (req, res) => {
 
 app.get('/device-experiment-ids', (req, res) => {
   var deviceID = extractFromQueryAsJSON(req.query.deviceID)
-  console.log(`Got request for device-experiment-ids: deviceID=${deviceID}`)
+  console.log(`Got request for device-experiment-ids: deviceID=${JSON.stringify(deviceID)}`)
   if (!deviceID['Build.HARDWARE']) {
     // Something strange is going on
     return res.send({
