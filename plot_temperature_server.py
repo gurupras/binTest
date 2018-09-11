@@ -75,12 +75,15 @@ class ExperimentPlotHandler(tornado.web.RequestHandler):
 		perf_y = []
 		[(perf_x.append(x['ft']), perf_y.append(x['tt'] * 1000)) for x in iterations]
 
+		figures = []
+
 		p1 = figure(title='', x_axis_label='Time (s)', y_axis_label='Time/Iteration (ms)', plot_height=270, responsive=True)
 		p1.line(perf_x, perf_y, line_width=1)
 		p1.y_range = Range1d(0, max(perf_y)+1000.0)
 
 		p1.xaxis.axis_label_text_font_style='bold'
 		p1.yaxis.axis_label_text_font_style='bold'
+		figures.append([p1])
 
 		p2 = figure(title='', x_axis_label='Time (s)', y_axis_label=r'Temperature (°C)', x_range=p1.x_range, plot_height=270, responsive=True)
 
@@ -94,8 +97,33 @@ class ExperimentPlotHandler(tornado.web.RequestHandler):
 
 		p2.xaxis.axis_label_text_font_style='bold'
 		p2.yaxis.axis_label_text_font_style='bold'
+		figures.append([p2])
 
-		combined = gridplot(children=[[p1], [p2]], responsive=True, merge_tools=True)
+		if results.get('thermaboxData', None):
+			# We have thermabox data. Plot that as well
+			tbox = results['thermaboxData']
+			limits = tbox['limits']
+			temperature = limits['temperature']
+			threshold = limits['threshold']
+			tbox_data = tbox['data']
+			p3 = figure(title='', x_axis_label='Time (s)', y_axis_label=r'Thermabox Temperature (°C)', x_range=p1.x_range, plot_height=270, responsive=True)
+
+			try:
+				workload_phase = [x for x in result['phases'] if x['name'] == 'workload'][0]
+				entries = [x for x in tbox_data if x['timestamp'] >= workload_phase['start'] and x['timestamp'] <= workload_phase['end']]
+				timestamps = [x['timestamp'] for x in entries]
+				temperatures = [x['temperature'] for x in entries]
+				p3.line(timestamps, temperatures, line_width=1)
+				p3.y_range = Range1d(temperature - (threshold * 2), temperature + (threshold * 2))
+				p3.xaxis.axis_label_text_font_style='bold'
+				p3.yaxis.axis_label_text_font_style='bold'
+				figures.append([p3])
+				print 'Added thermabox temperature plot'
+			except Exception, e:
+				print e
+				pass
+
+		combined = gridplot(children=figures, responsive=True, merge_tools=True)
 		html = file_html(combined, CDN, "test")
 		script, div = components(combined)
 
