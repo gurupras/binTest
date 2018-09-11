@@ -33,7 +33,7 @@ class MongoDB {
     var doc = sanitizeDoc(doc)
     const collection = await this.getCollection()
     return new Promise((resolve, reject) => {
-      collection.insert(doc).then((result) => {
+      collection.insertOne(doc).then((result) => {
         //console.log(`Insert result: ${JSON.stringify(result)}`)
         resolve(result)
       }).catch((err) => {
@@ -73,7 +73,7 @@ class MongoDB {
   async connect () {
     const self = this
     this.connectPromise = this.connectPromise || new Promise((resolve, reject) => {
-      mongoDB.MongoClient.connect(self.url).then((client) =>  {
+      mongoDB.MongoClient.connect(self.url, {useNewUrlParser: true}).then((client) =>  {
         const db = client.db(self.database)
         self.db = db
         console.log("Connected successfully to server")
