@@ -222,12 +222,14 @@ export default {
     },
     async runWarmupPhase () {
       this.test.currentPhase = TestPhases.WARMUP
+      AndroidAPI.beforeWarmup()
       const start = moment().local().valueOf()
       AndroidAPI.warmupAsync(this.warmupDuration, `
         window.${this.exportName}.$emit('warmup-done')
       `)
       await this.waitForEvent('warmup-done')
       const end = moment().local().valueOf()
+      AndroidAPI.afterWarmup()
       this.phases.push({
         name: 'warmup',
         start,
@@ -239,9 +241,11 @@ export default {
         this.log('Running cooldown')
         this.test.currentPhase = TestPhases.COOLDOWN
         this.checkScreenRequisites()
+        AndroidAPI.beforeCooldown()
         const start = moment().local().valueOf()
         var result = this.doCooldown()
         const end = moment().local().valueOf()
+        AndroidAPI.afterCooldown()
         this.phases.push({
           name: 'cooldown',
           start,
@@ -260,8 +264,24 @@ export default {
         this.log(`Failed cooldown: ${e}`)
       }
     },
-    runWorkloadPhase () {
+    async runWorkloadPhase () {
+      const self = this
+      const promise = new Promise((resolve, reject) => {
+        self.$on('test-finished', (results = self.test.getResult()) => {
+          AndroidAPI.afterWorkload()
+          const start = results.startTime
+          const end = results.endTime
+          self.phases.push({
+            name: 'workload',
+            start,
+            end
+          })
+          resolve(results)
+        })
+      })
+
       if (this.native) {
+        AndroidAPI.beforeWorkload()
         this.test.startTime = moment().local().valueOf()
         var resultsStr = AndroidAPI.runWorkloadPi(15000, this.test.workloadDurationMS)
         this.test.endTime = moment().local().valueOf()
@@ -270,8 +290,10 @@ export default {
         this.$emit('test-finished', this.test.results)
       } else {
         this.$emit('beforeWorkload')
+        AndroidAPI.beforeWorkload()
         this.test.run()
       }
+      return promise
     },
     uploadData (str) {
       const MAX_CHUNK_SIZE = 32 * 1024
@@ -333,17 +355,6 @@ export default {
       this.log(`Experiment ID: ${this.exptID}`)
       this.$emit('onExperimentIDAvailable', test, this.exptID)
 
-      this.$on('test-finished', (results = self.test.getResult()) => {
-        const start = results.startTime
-        const end = results.endTime
-        self.phases.push({
-          name: 'workload',
-          start,
-          end
-        })
-        self.onTestFinished(results)
-      })
-
       this.updateBackgroundCgroupCPUs()
       this.$emit('beforeTest')
       this.clockDrift.push(this.getClockMap())
@@ -372,12 +383,13 @@ export default {
       var tempReading = JSON.parse(AndroidAPI.getTemperature())
       this.exptStartTemp = tempReading.temperature
       this.log(`Running workload`)
-      this.runWorkloadPhase()
-    },
-    onTestFinished (testResults) {
+      const results = await this.runWorkloadPhase()
       if (!this.cooldownFirst) {
         this.runCooldownPhase()
       }
+      this.onTestFinished(results)
+    },
+    onTestFinished (testResults) {
       this.test.currentPhase = TestPhases.FINISHED
       this.clockDrift.push(this.getClockMap())
       AndroidAPI.toast('Uploading logs')
