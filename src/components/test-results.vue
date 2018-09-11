@@ -218,7 +218,7 @@ export default {
       this.loading = true
       this.error = undefined
       var self = this
-      this.getTestResults(experimentID).then((data) => {
+      this.getTestResults({experimentID}).then((data) => {
         self.updateTestInfo(data.testInfo, data)
         self.updateTestRank(data.rankingData)
         self.testResult = data
@@ -306,7 +306,15 @@ export default {
       }
     }
   },
-  beforeMount () {
+  async beforeMount () {
+    const { query } = this.$route
+    const { experimentID } = query
+
+    if (experimentID) {
+      this.currentTestID = experimentID
+      this.$router.replace({query: {}})
+    }
+
     if (Object.keys(this.testIDs).length === 0) {
       this.initPromise = this.$store.dispatch('getTestIDs')
     } else {
@@ -315,10 +323,10 @@ export default {
       })
     }
   },
-  mounted () {
+  async mounted () {
     var self = this
     this.initPromise.then(() => {
-      self.currentTestID = self.sortedTestIDs[0]
+      self.currentTestID = self.currentTestID || self.sortedTestIDs[0]
       self.initializeSelect()
     })
     window.testResults = this

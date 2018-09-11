@@ -24,7 +24,7 @@ import fakeDevices from '@/js/fake-devices'
 
   window.addFakeDevice = (deviceID, key) => {
     const extraFakeDevices = JSON.parse(localStorage.getItem('fakeDeviceIDs') || '{}')
-    key = key || `${deviceID['Build>MANUFACTURER']} ${deviceID.DeviceName.marketName}-${deviceID.IMEI.slice(-5)}`
+    key = key || `${deviceID['Build>MANUFACTURER'] || deviceID['Build.MANUFACTURER']} ${deviceID.DeviceName.marketName}-${deviceID.IMEI.slice(-5)}`
     const fixedDeviceID = {}
     Object.keys(deviceID).forEach(key => {
       const fixedKey = key.replace('>', '.')
@@ -33,6 +33,7 @@ import fakeDevices from '@/js/fake-devices'
     fakeDevices[key] = fixedDeviceID
     extraFakeDevices[key] = fixedDeviceID
     localStorage.setItem('fakeDeviceIDs', JSON.stringify(extraFakeDevices))
+    return key
   }
   Object.entries(extraFakeDevices).forEach(([key, deviceID]) => window.addFakeDevice(deviceID, key))
 })()
@@ -61,9 +62,12 @@ var currentExperimentID
 const uploadData = {}
 
 const AndroidAPI = {
-  isFake: localStorage.getItem('isFake'),
+  isFake: localStorage.getItem('isFake') === 'true',
   stockResponse: function () {
     return new Error('Please install the smartphone.exposed app from the PlayStore')
+  },
+  getFakeDevice () {
+    return localStorage.fakeDevice
   },
   getDeviceID: function (callback) {
     const fakeDeviceID = localStorage.getItem('fakeDeviceID')

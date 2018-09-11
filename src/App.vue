@@ -19,7 +19,7 @@
       </div>
     </header>
 
-    <div class="progress-preloader" v-if="!deviceID">
+    <div class="progress-preloader" v-if="!initialized">
       <div class="progress">
         <div class="indeterminate"></div>
       </div>
@@ -78,6 +78,9 @@ export default {
   },
   data: function () {
     return {
+      initializedPromise: undefined,
+      initialized: false,
+      currentEmulatedDevice: undefined
     }
   },
   computed: {
@@ -107,6 +110,12 @@ export default {
   watch: {
     '$route.name': function (v) {
       this.currentSection = v
+    },
+    currentEmulatedDevice (v) {
+      this.$store.commit('deviceID', fakeDevices[v])
+      this.$store.dispatch('getTestIDs').then(() => {
+        console.log(`Fetched test IDs`)
+      })
     }
   },
   methods: {
@@ -118,26 +127,54 @@ export default {
       this.currentSection = route
       this.$router.push(`/${route}`)
     },
+    updateSelectValue (selector, value) {
+      const mSelect = window.M.FormSelect.getInstance(this.$el.querySelector(selector))
+      mSelect.input.value = value
+    },
     changeSimulatedDevice (e) {
-      this.$store.commit('deviceID', fakeDevices[e.target.value])
-      this.$store.dispatch('getTestIDs').then(() => {
-        console.log(`Fetched test IDs`)
-      })
-      const mSelect = window.M.FormSelect.getInstance(this.$el.querySelector('#device-select'))
-      mSelect.input.value = e.target.value
+      const fakeDevice = e.target.value
+      this.currentEmulatedDevice = fakeDevice
+      this.updateSelectValue('#device-select', e.target.value)
     }
   },
-  mounted: function () {
+  async beforeMount () {
+    var res
+    this.initializedPromise = new Promise((resolve, reject) => {
+      res = resolve
+    })
+
+    const { query } = this.$route
+    const { loadExperimentID } = query
+    if (loadExperimentID) {
+      const testResults = await this.$store.dispatch('getTestResults', {deviceID: {}, experimentID: loadExperimentID})
+      const { rawData } = testResults
+      const { deviceID } = rawData
+      console.log(`Added fake device`)
+      const key = window.addFakeDevice(deviceID)
+      localStorage.isFake = true
+      localStorage.fakeDevice = key
+      this.$router.push({path: '/test-results', query: {experimentID: loadExperimentID}})
+    }
+    this.currentEmulatedDevice = localStorage.fakeDevice
+    return res()
+  },
+  async mounted () {
     const self = this
-    this.$store.dispatch('initializeDeviceData').then(function () {
+    await this.initializedPromise
+    await this.$store.dispatch('initializeDeviceData')
+    this.initialized = true
+    this.$nextTick(() => {
       const selectEl = self.$el.querySelector('#device-select')
       window.M.FormSelect.init(selectEl)
-
-      // TODO: Initialize tabs
-      // window.M.Tabs.init(self.$el.querySelector('.tabs'), {
-      //   swipeable: true
-      // })
+      if (self.currentEmulatedDevice) {
+        self.updateSelectValue('#device-select', self.currentEmulatedDevice)
+      }
     })
+
+    // TODO: Initialize tabs
+    // window.M.Tabs.init(self.$el.querySelector('.tabs'), {
+    //   swipeable: true
+    // })
   }
 }
 </script>

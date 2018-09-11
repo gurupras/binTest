@@ -162,23 +162,20 @@ const actions = {
       })
     })
   },
-  getTestResults ({ state, commit, dispatch }, testID) {
-    return new Promise((resolve, reject) => {
-      axios.get('/api/experiment-results', {
-        params: {
-          deviceID: state.deviceID,
-          utcOffset: moment().utcOffset(),
-          experimentID: testID
-        }
-      }).then((response) => {
-        const data = response.data
-        if (data.error) {
-          return reject(new Error(data.error))
-        }
-        // TODO: Should we retry?
-        resolve(response.data)
-      })
+  async getTestResults ({ state, commit, dispatch }, { deviceID = state.deviceID, experimentID }) {
+    const response = await axios.get('/api/experiment-results', {
+      params: {
+        deviceID,
+        utcOffset: moment().utcOffset(),
+        experimentID
+      }
     })
+    const data = response.data
+    if (data.error) {
+      throw new Error(data.error)
+    }
+    // TODO: Should we retry?
+    return response.data
   },
   async getCPUBinInfo ({ state, commit, dispatch }) {
     const data = await utils.asyncAPICallbackFn(AndroidAPI.getCPUBin, AndroidAPI)
@@ -200,10 +197,18 @@ const actions = {
   async initializeDeviceData ({ state, commit, dispatch }) {
     await dispatch('getDeviceID')
     console.log(`Fetched deviceID`)
-    await dispatch('getCPUBinInfo')
-    console.log(`Fetched CPU bin info`)
-    await dispatch('getTestIDs')
+    // await dispatch('getCPUBinInfo')
+    // console.log(`Fetched CPU bin info`)
+    dispatch('getTestIDs')
     console.log(`Fetched test IDs`)
+  },
+  async getRawExperimentData (experimentID) {
+    const response = await axios.get('/api/experiment-data', {
+      params: {
+        experimentID
+      }
+    })
+    return response.data
   }
 }
 
