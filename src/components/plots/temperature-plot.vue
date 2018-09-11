@@ -17,6 +17,10 @@ export default {
       default: function () {
         return this.$store.getters.temperaturePlotDefaultOptions
       }
+    },
+    beforePlotCallback: {
+      type: Function,
+      default: undefined
     }
   },
   computed: {
@@ -40,6 +44,9 @@ export default {
       const data = Object.assign({}, this.temperaturePlotDefaultData)
       data.labels = this.temperatureData.labels
       data.datasets[0].data = this.temperatureData.data
+      if (this.beforePlotCallback) {
+        this.beforePlotCallback(data)
+      }
       this.renderChart(data, this.options)
     }
   },
