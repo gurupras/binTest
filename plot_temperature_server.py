@@ -101,9 +101,9 @@ class ExperimentPlotHandler(tornado.web.RequestHandler):
     p2.yaxis.axis_label_text_font_style='bold'
     figures.append([p2])
 
-    if results.get('thermaboxData', None):
+    if data.get('thermaboxData', None):
       # We have thermabox data. Plot that as well
-      tbox = results['thermaboxData']
+      tbox = data['thermaboxData']
       limits = tbox['limits']
       temperature = limits['temperature']
       threshold = limits['threshold']
