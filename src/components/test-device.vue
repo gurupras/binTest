@@ -373,6 +373,7 @@ export default {
         return
       }
 
+      const experimentStartTime = moment().local().valueOf()
       if (this.cooldownFirst) {
         if (this.doWarmupBeforeCooldown) {
           this.log(`Warming up device a little bit ...`)
@@ -387,6 +388,8 @@ export default {
       if (!this.cooldownFirst) {
         this.runCooldownPhase()
       }
+      results.experimentEndTime = moment().local().valueOf()
+      results.experimentStartTime = experimentStartTime
       this.onTestFinished(results)
     },
     onTestFinished (testResults) {

@@ -2,6 +2,7 @@
 /* global AndroidAPI */
 import moment from 'moment'
 import URI from 'urijs'
+import axios from 'axios'
 import { mapGetters } from 'vuex'
 import TestDevice from '@/components/test-device'
 import thermabox from '@/js/thermabox.js'
@@ -92,7 +93,6 @@ export default {
       })
 
       this.$on('beforeWorkload', () => {
-        AndroidAPI.updateThermaboxRecorder('start')
       })
 
       this.$on('onResultAvailable', async (testResult) => {
@@ -100,7 +100,13 @@ export default {
           testResult.label = self.label
         }
         testResult.testType = 'sweep-test-vue-v2'
-        testResult.thermaboxData = JSON.parse(AndroidAPI.updateThermaboxRecorder('stop'))
+        const response = await axios.get('/api/thermabox/query', {
+          params: {
+            start: testResult.experimentStartTime,
+            end: testResult.experimentEndTime
+          }
+        })
+        testResult.thermaboxData = response.data
         testResult.ambientTemperature = self.currentAmbientTemperature
         testResult.iteration = self.iteration
         testResult.timeMap = self.timeMap
