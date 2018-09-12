@@ -564,6 +564,9 @@ app.get('/thermabox/query', async (req, res) => {
   const { query } = req
   // TODO: Get last 12 hours of data from mongoDB
   // for this deviceID and ship it over to python to plot
+  if (!query.start || !query.end) {
+    return res.status(400).send('Bad Request. Missing start/end query parameters')
+  }
   const start = Number(query.start)
   const end = Number(query.end)
 
@@ -582,7 +585,7 @@ app.get('/thermabox/query', async (req, res) => {
     const docs = await mongo.getResultAsArray(result.sort({$natural: 1}))
     const data = docs.map(doc => ({state: doc.state, timestamp: doc.timestamp, temperature: doc.temperature}))
     res.send(data)
-  } catch (e) {
+  } catch (err) {
     console.log(err && err.stack)
     return res.status(500).send(err.message)
   }
