@@ -2,9 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import os,sys,argparse
-import json
+import simplejson as json
 import time
 import random
+import datetime
+import re
 
 from bokeh.plotting import figure, output_file, show
 from bokeh.layouts import column, gridplot
@@ -18,7 +20,7 @@ import tornado.ioloop
 import tornado.web
 from tornado.httpserver import HTTPServer
 
-from processing import pymongo_helper, ranking_algorithm
+from processing import pymongo_helper, ranking_algorithm, parse_trace
 
 def setup_parser():
   parser = argparse.ArgumentParser()
@@ -184,6 +186,37 @@ class ExperimentRankingHandler(tornado.web.RequestHandler):
         'error': json.loads(str(e))
       }))
 
+class ParseTraceHandler(tornado.web.RequestHandler):
+  def post(self):
+    trace_data = tornado.escape.json_decode(self.request.body)
+    trace_lines = trace_data['data']
+
+    # Remove all the comments
+    trace_lines = [x for x in trace_lines if x[0] != '#']
+    # The first trace is a trace marker with the timestamp map
+    first_trace = parse_trace.process_line(trace_lines[0], pattern=parse_trace.TRACE_PATTERN)
+    assert first_trace.tag == 'tracing_mark_write'
+    pattern = re.compile('.*epoch=(?P<epoch>\d+).*')
+    m = pattern.match(first_trace.tracing_mark_write.payload)
+    assert m, 'Did not match expected trace_mark pattern: {}'.format(pattern.pattern)
+    d = m.groupdict()
+
+    trace_time_zero = first_trace.timestamp
+    epoch_time_zero = int(d['epoch'])
+
+    def get_epochtime_for_tracetime(timestamp):
+      trace_time_diff = (timestamp - trace_time_zero) * 10 # The global trace_clock seems to be using 10ms as unit
+      epoch_timestamp = epoch_time_zero + trace_time_diff
+      return epoch_timestamp
+
+    traces = []
+    for (idx, line) in enumerate(trace_lines):
+      trace = parse_trace.process_line(line, calculate_datetime_fn=get_epochtime_for_tracetime, pattern=parse_trace.TRACE_PATTERN)
+      if not trace:
+        continue
+      traces.append(trace)
+    trace_data['data'] = traces
+    self.write(json.dumps(trace_data))
 
 
 
@@ -193,6 +226,7 @@ def make_app():
     (r"/experiment-plot", ExperimentPlotHandler),
     (r"/experiment-ranking", ExperimentRankingHandler),
     (r"/sanitize-temperatures", SanitizeTemperaturesHandler),
+    (r"/parse-trace", ParseTraceHandler),
   ])
 
 def main(argv):

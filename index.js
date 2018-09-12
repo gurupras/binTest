@@ -274,8 +274,19 @@ async function upload (json) {
     res.status(400).send('Invalid data type')
     return
   }
-  if (json.type === 'expt-data') {
-    lastExptUploadTime = moment().local().format()
+  switch (json.type) {
+    case 'expt-data':
+      lastExptUploadTime = moment().local().format()
+      break
+    case 'tracing-data':
+      // Incoming data is all essentially strings.
+      // Process this data with python
+      json = JSON.parse(await post({
+        url: 'http://localhost:10070/parse-trace',
+        body: JSON.stringify(json),
+        gzip: true
+      }))
+      break
   }
   // TODO: Check for fields
   return mongo.insertDocument(json)
