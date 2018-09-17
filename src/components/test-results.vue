@@ -93,7 +93,7 @@
               <div class="row">
                 <div class="col s12 offset-l3 l6">
                   <experiment-plot :height="plotSize" v-if="testResult" :temperature-data="temperaturePlotData" :experiment-data="experimentData"/>
-                  <temperature-plot :height="100" v-if="thermaboxData" :beforePlotCallback="modifyThermaboxLabel" :temperature-data="thermaboxData.processed" :options="thermaboxPlotOptions"/>
+                  <temperature-plot :height="100" v-if="thermaboxData" :beforePlotCallback="modifyThermaboxData" :temperature-data="thermaboxData.processed" :options="thermaboxPlotOptions"/>
                 </div>
               </div>
             </div>
@@ -113,6 +113,7 @@ import VueMarkdown from 'vue-markdown'
 import ExperimentPlot from '@/components/plots/experiment-plot'
 import TemperaturePlot from '@/components/plots/temperature-plot'
 import TemperatureMixin from '@/components/plots/temperature-mixin'
+import ThermaboxPlotMixin from '@/components/plots/thermabox-plot-mixin'
 import moment from 'moment'
 
 export default {
@@ -122,7 +123,7 @@ export default {
     ExperimentPlot,
     VueMarkdown
   },
-  mixins: [TemperatureMixin],
+  mixins: [TemperatureMixin, ThermaboxPlotMixin],
   computed: {
     ...mapGetters([
       'deviceID',
@@ -138,23 +139,6 @@ export default {
       ret.scales.xAxes[0].time = {
         unit: 'minute'
       }
-      return ret
-    },
-    thermaboxPlotOptions () {
-      const ret = this.temperaturePlotOptions
-      const yAxis = ret.scales.yAxes[0]
-      yAxis.ticks.beginAtZero = false
-      const thermaboxData = this.thermaboxData.raw
-      const temperature = thermaboxData.limits.temperature
-      const threshold = thermaboxData.limits.threshold
-      yAxis.ticks.suggestedMax = temperature + (threshold * 2.0)
-      // We need to start both plots from the same timestamp
-      const xAxis = ret.scales.xAxes[0]
-      xAxis.ticks = xAxis.ticks || {}
-      xAxis.ticks.min = this.testResult.rawData.temperatureData.timestamps[0]
-      xAxis.ticks.max = this.testResult.rawData.temperatureData.timestamps[this.testResult.rawData.temperatureData.timestamps.length - 1]
-      xAxis.ticks.suggestedMin = xAxis.ticks.min
-      xAxis.ticks.suggestedMax = xAxis.ticks.max
       return ret
     },
     temperaturePlotData () {
@@ -176,9 +160,7 @@ export default {
       testInfo: undefined,
       testRank: undefined,
       error: undefined,
-      loading: false,
-      hasThermaboxData: false,
-      thermaboxData: undefined
+      loading: false
       // temperaturePlotData: undefined
     }
   },
@@ -194,12 +176,6 @@ export default {
     ...mapActions([
       'getTestResults'
     ]),
-    smoothenThermaboxTemperature (temp) {
-      return Number(temp.toFixed(1))
-    },
-    modifyThermaboxLabel (data) {
-      data.datasets[0].label = 'Thermabox Temperature'
-    },
     getTestString (testID) {
       const startTime = this.testIDs.data[testID].startTime
       const timeStr = startTime.format('YYYY-MM-DD HH:mm:ss')
@@ -222,26 +198,7 @@ export default {
         self.updateTestInfo(data.testInfo, data)
         self.updateTestRank(data.rankingData)
         self.testResult = data
-        if (data.rawData.thermaboxData) {
-          self.hasThermaboxData = true
-          const tboxData = data.rawData.thermaboxData.data
-          // We only have thermabox data for the workload phase
-          // But, the other plot starts from earlier
-          // So, we add the first timestamp of the other plot into thermabox data
-          const tboxTimestamps = [data.rawData.temperatureData.timestamps[0]]
-          const tboxTemperatures = [self.smoothenThermaboxTemperature(tboxData[0].temperature)]
-          tboxData.forEach(entry => {
-            tboxTimestamps.push(entry.timestamp)
-            tboxTemperatures.push(self.smoothenThermaboxTemperature(entry.temperature))
-          })
-          self.thermaboxData = {
-            raw: data.rawData.thermaboxData,
-            processed: self.fixTemperatureDataForPlot({
-              timestamps: tboxTimestamps,
-              temperatures: tboxTemperatures
-            })
-          }
-        }
+        self.loadThermaboxData(data)
       }).catch((err) => {
         self.error = err.message
       }).finally(() => {

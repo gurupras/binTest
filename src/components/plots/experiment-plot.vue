@@ -224,32 +224,14 @@ export default {
       // based on where elements in the temperature dataset appear
       ctx.save()
       const rawData = self.experimentData.rawData
-      if (rawData.properties.cooldownFirst) {
-        // There was a small warmup before this cooldown which started at
-        // labels[0] and ended at
-        // rawData.cooldownData[0].now - rawData.cooldownData[0].sleepPeriodMs
-        const closestWarmupStartIndex = 0
-        const warmupEnd = rawData.cooldownData[0].now - rawData.cooldownData[0].sleepPeriodMs
-        const closestWarmupEndIndex = utils.closest(warmupEnd, labels).index
 
-        self.addAnnotation('Warmup Phase', closestWarmupStartIndex, closestWarmupEndIndex)
-      }
-      // Add the cooldown
-      const cooldownData = rawData.cooldownData
-      const closestCooldownStartIndex = utils.closest(cooldownData[0].now - cooldownData[0].sleepPeriodMs, labels).index
-      const closestCooldownEndIndex = utils.closest(cooldownData.last.now, labels).index
-      self.addAnnotation('Cooldown Phase', closestCooldownStartIndex, closestCooldownEndIndex, {
-        skipLeft: true
+      const phases = rawData.phases
+      phases.forEach(phase => {
+        const closestStartIndex = utils.closest(phase.start, labels).index
+        const closestEndIndex = utils.closest(phase.end, labels).index
+        const phaseLabel = `${phase.name.charAt(0).toUpperCase() + phase.name.slice(1)} Phase`
+        self.addAnnotation(phaseLabel, closestStartIndex, closestEndIndex)
       })
-
-      // Add the workload
-      const iterations = rawData.iterations
-      const closestWorkloadStartIndex = closestCooldownEndIndex
-      const closestWorkloadEndIndex = utils.closest(iterations[iterations.length - 1].ft, labels).index
-      self.addAnnotation('Workload', closestWorkloadStartIndex, closestWorkloadEndIndex, {
-        skipLeft: true
-      })
-
       ctx.restore()
     }
   },
