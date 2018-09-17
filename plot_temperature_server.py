@@ -205,7 +205,7 @@ class ParseTraceHandler(tornado.web.RequestHandler):
     epoch_time_zero = int(d['epoch'])
 
     def get_epochtime_for_tracetime(timestamp):
-      trace_time_diff = (timestamp - trace_time_zero) * 10 # The global trace_clock seems to be using 10ms as unit
+      trace_time_diff = (timestamp - trace_time_zero) * 1000 # The global trace_clock seems to be using seconds as unit
       epoch_timestamp = epoch_time_zero + trace_time_diff
       return epoch_timestamp
 
@@ -215,8 +215,28 @@ class ParseTraceHandler(tornado.web.RequestHandler):
       if not trace:
         continue
       traces.append(trace)
-    trace_data['data'] = traces
-    self.write(json.dumps(trace_data))
+
+    # Since the data may be too large for MongoDB, split the data up into chunks
+    # chunked_traces = [traces[i:i + 1000] for i in xrange(0, len(traces), 1000)]
+    chunked_traces = traces
+    # Make a copy of the original data without the strings
+    result = []
+    del trace_data['data']
+    # Make a copy of this state for the first entry
+    first_entry_header = json.loads(json.dumps(trace_data))
+    del trace_data['deviceID']
+
+    for (idx, chunk) in enumerate(chunked_traces):
+      obj = {
+        'experimentID': trace_data['experimentID'],
+        'type': trace_data['type'],
+        'chunkIdx': idx,
+        'data': chunk
+      }
+      result.append(obj)
+    # Update the first entry
+    result[0].update(first_entry_header)
+    self.write(json.dumps(result))
 
 
 

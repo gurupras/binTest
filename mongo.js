@@ -28,19 +28,18 @@ class MongoDB {
     this.database = database
   }
 
-  async insertDocument (doc, callback) {
-    //console.log('Sanitizing document ...')
-    var doc = sanitizeDoc(doc)
+  async insertDocument (doc, { sanitize = true, multi = false }) {
+    if (sanitize) {
+      var doc = sanitizeDoc(doc)
+    }
     const collection = await this.getCollection()
-    return new Promise((resolve, reject) => {
-      collection.insertOne(doc).then((result) => {
-        //console.log(`Insert result: ${JSON.stringify(result)}`)
-        resolve(result)
-      }).catch((err) => {
-        console.log(err && err.stack)
-        reject(err)
-      })
-    })
+    var result
+    if (multi) {
+      result = await collection.insertMany(doc)
+    } else {
+      result = await collection.insertOne(doc)
+    }
+    return result
   }
 
   async query (query, opts) {
@@ -87,4 +86,7 @@ class MongoDB {
   }
 }
 
-export default MongoDB
+export {
+  MongoDB,
+  sanitizeDoc
+}

@@ -15,7 +15,7 @@ const RateLimit = require('express-rate-limit')
 const http = require('http')
 const https = require('https')
 const yaml = require('js-yaml')
-const MongoDB = require('./mongo').default
+const { MongoDB, sanitizeDoc } = require('./mongo')
 const FonoAPI = require('./fonoapi').default
 const config = require('./appconfig').default
 const thermabox = require('./src/js/thermabox.js').default
@@ -274,6 +274,9 @@ async function upload (json) {
     res.status(400).send('Invalid data type')
     return
   }
+
+  const insertOptions = {}
+
   switch (json.type) {
     case 'expt-data':
       lastExptUploadTime = moment().local().format()
@@ -286,10 +289,14 @@ async function upload (json) {
         body: JSON.stringify(json),
         gzip: true
       }))
+      // The first entry alone contains deviceID. Sanitize this
+      sanitizeDoc(json[0].deviceID)
+      insertOptions.sanitize = false
+      insertOptions.multi = true
       break
   }
   // TODO: Check for fields
-  return mongo.insertDocument(json)
+  return mongo.insertDocument(json, insertOptions)
 }
 
 app.post('/upload', async (req, res) => {
