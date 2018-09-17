@@ -8,7 +8,7 @@ import store from '@/store'
 import M from 'materialize-css'
 import '@/styles/app.scss'
 import utils from '@/js/utils'
-
+import thermabox from '@/js/thermabox.js'
 Vue.config.productionTip = false
 
 /* eslint-disable no-new */
@@ -22,3 +22,4 @@ window.app = new Vue({
 
 window.M = M
 window.utils = utils
+window.thermabox = thermabox
