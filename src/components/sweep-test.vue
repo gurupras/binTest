@@ -55,17 +55,17 @@ export default {
 
       console.log(`Using sweep-test handlers`)
 
-      this.$on('beforeStartTest', async () => {
+      this.emitter.on('beforeStartTest', async () => {
         // Tell server to start recording thermabox state
       })
 
-      this.$on('onTestObjectCreated', (test) => {
+      this.emitter.on('onTestObjectCreated', (test) => {
       })
 
-      this.$on('onExperimentIDAvailable', (test, experimentID) => {
+      this.emitter.on('onExperimentIDAvailable', (test, experimentID) => {
       })
 
-      this.$on('beforeTest', () => {
+      this.emitter.on('beforeTest', () => {
         self.timeMap = JSON.parse(AndroidAPI.getAllTimes())
         self.timeMap.jsTime = moment().local().valueOf()
 
@@ -88,34 +88,39 @@ export default {
         }
       })
 
-      this.$on('beforeStartExperiment', () => {
+      this.emitter.on('beforeStartExperiment', () => {
         AndroidAPI.post('http://smartphone.exposed/api/info', JSON.stringify({msg: `Starting experiment`}))
       })
 
-      this.$on('beforeWorkload', () => {
+      this.emitter.on('beforeWorkload', () => {
       })
 
-      this.$on('onResultAvailable', async (testResult) => {
+      this.emitter.on('onResultAvailable', async (testResult) => {
         if (self.label) {
           testResult.label = self.label
         }
-        testResult.testType = 'sweep-test-vue-v2'
+        testResult.testType = 'sweep-test-vue-v3'
+
+        const limits = await thermabox.getLimits()
         const response = await axios.get('/api/thermabox/query', {
           params: {
             start: testResult.experimentStartTime,
             end: testResult.experimentEndTime
           }
         })
-        testResult.thermaboxData = response.data
+        testResult.thermaboxData = {
+          limits,
+          data: response.data
+        }
         testResult.ambientTemperature = self.currentAmbientTemperature
         testResult.iteration = self.iteration
         testResult.timeMap = self.timeMap
       })
 
-      this.$on('beforeCleanup', () => {
+      this.emitter.on('beforeCleanup', () => {
       })
 
-      this.$on('afterCleanup', () => {
+      this.emitter.on('afterCleanup', () => {
         if (self.externalCall) {
           self.$emit('results-handled')
         } else {

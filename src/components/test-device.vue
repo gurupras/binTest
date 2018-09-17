@@ -66,6 +66,7 @@
 import { mapGetters } from 'vuex'
 import { PiTest, TestPhases } from '@/js/pi-test'
 import moment from 'moment'
+import Emittery from 'emittery'
 
 export default {
   name: 'test-device-mixin',
@@ -100,6 +101,7 @@ export default {
       isPluggedIn: false,
       batteryLevel: 1.0,
       clockDrift: [],
+      emitter: new Emittery(),
       phases: []
     }
   },
@@ -224,10 +226,7 @@ export default {
       this.test.currentPhase = TestPhases.WARMUP
       AndroidAPI.beforeWarmup()
       const start = moment().local().valueOf()
-      AndroidAPI.warmupAsync(this.warmupDuration, `
-        window.${this.exportName}.$emit('warmup-done')
-      `)
-      await this.waitForEvent('warmup-done')
+      AndroidAPI.warmup(this.warmupDuration)
       const end = moment().local().valueOf()
       AndroidAPI.afterWarmup()
       this.phases.push({
@@ -289,7 +288,7 @@ export default {
         this.test.results = results
         this.$emit('test-finished', this.test.results)
       } else {
-        this.$emit('beforeWorkload')
+        await this.emitter.emit('beforeWorkload')
         AndroidAPI.beforeWorkload()
         this.test.run()
       }
@@ -316,7 +315,7 @@ export default {
       AndroidAPI.finishUploadData(key)
       return key
     },
-    runTest (externalCall, appendToResult) {
+    async runTest (externalCall, appendToResult) {
       console.log(`Called runTest ...`)
       this.logs = ['Initialized']
 
@@ -326,10 +325,10 @@ export default {
       }
 
       this.runningTest = true
-      this.$emit('beforeStartTest')
+      await this.emitter.emit('beforeStartTest')
       this.startTest()
     },
-    startTest () {
+    async startTest () {
       var self = this
       const test = PiTest(this)
       this.test = test
@@ -337,7 +336,7 @@ export default {
       test.warmupDurationMS = this.warmupDuration
       test.cooldownDurationMS = this.cooldownDurationMinutes * 60 * 1000
       test.workloadDurationMS = this.workloadDurationMinutes * 60 * 1000
-      this.$emit('onTestObjectCreated', test)
+      await this.emitter.emit('onTestObjectCreated', test)
 
       this.$store.commit('navigationDisabled', true)
       const start = moment().local().valueOf()
@@ -353,14 +352,14 @@ export default {
       this.checkRequisites()
       this.exptID = AndroidAPI.startExperiment()
       this.log(`Experiment ID: ${this.exptID}`)
-      this.$emit('onExperimentIDAvailable', test, this.exptID)
+      await this.emitter.emit('onExperimentIDAvailable', test, this.exptID)
 
       this.updateBackgroundCgroupCPUs()
-      this.$emit('beforeTest')
+      await this.emitter.emit('beforeTest')
       this.clockDrift.push(this.getClockMap())
 
       console.log(`exportName=${self.exportName}`)
-      this.$emit('beforeStartExperiment')
+      await this.emitter.emit('beforeStartExperiment')
       this.startExperiment()
     },
     async startExperiment () {
@@ -390,14 +389,14 @@ export default {
       }
       results.experimentEndTime = moment().local().valueOf()
       results.experimentStartTime = experimentStartTime
-      this.onTestFinished(results)
+      await this.onTestFinished(results)
     },
-    onTestFinished (testResults) {
+    async onTestFinished (testResults) {
       this.test.currentPhase = TestPhases.FINISHED
       this.clockDrift.push(this.getClockMap())
       AndroidAPI.toast('Uploading logs')
       this.testResults = testResults
-      testResults['testType'] = 'test-type-v1'
+      testResults['testType'] = 'test-type-v3'
       testResults['startTemperature'] = this.exptStartTemp
       testResults['cooldownData'] = this.cooldownData
       testResults['endTemperature'] = this.cooldownData.last.tempAfterSleep
@@ -410,7 +409,7 @@ export default {
         isFake: AndroidAPI.isFake || false
       }
       testResults['phases'] = this.phases
-      this.$emit('onResultAvailable', testResults)
+      await this.emitter.emit('onResultAvailable', testResults)
 
       var key = this.uploadData(JSON.stringify(testResults))
       AndroidAPI.uploadExperimentData('http://smartphone.exposed/', 'upload-expt-data', key)
@@ -420,45 +419,45 @@ export default {
       }
       this.testIDs.order.unshift(this.exptID)
 
-      this.$emit('beforeCleanup')
-      this.testCleanup(this.interrupted)
+      await this.emitter.emit('beforeCleanup')
+      await this.testCleanup(this.interrupted)
     },
     setupEventHandlers () {
       const self = this
 
       console.log(`Using test-device handlers`)
 
-      this.$on('beforeStartTest', () => {
+      this.emitter.on('beforeStartTest', () => {
         self.checkRequisites()
       })
 
-      this.$on('onTestObjectCreated', (test) => {
+      this.emitter.on('onTestObjectCreated', (test) => {
       })
 
-      this.$on('onExperimentIDAvailable', (test, experimentID) => {
+      this.emitter.on('onExperimentIDAvailable', (test, experimentID) => {
       })
 
-      this.$on('beforeStartExperiment', () => {
+      this.emitter.on('beforeStartExperiment', () => {
       })
 
-      this.$on('beforeWorkload', () => {
+      this.emitter.on('beforeWorkload', () => {
       })
 
-      this.$on('onResultAvailable', (testResult) => {
+      this.emitter.on('onResultAvailable', (testResult) => {
       })
 
-      this.$on('beforeCleanup', (wasInterrupted) => {
+      this.emitter.on('beforeCleanup', (wasInterrupted) => {
       })
 
-      this.$on('afterCleanup', () => {
+      this.emitter.on('afterCleanup', async () => {
         if (self.externalCall) {
-          self.$emit('results-handled')
+          await self.emitter.emit('results-handled')
         } else {
           self.$router.push('/test-results')
         }
       })
     },
-    testCleanup (wasInterrupted) {
+    async testCleanup (wasInterrupted) {
       // Cleanup
       clearInterval(this.progressInterval)
       this.$el.querySelector('#test-progress').style.width = 0
@@ -467,7 +466,7 @@ export default {
       this.phases = []
       // Enable navigation
       this.$store.commit('navigationDisabled', false)
-      this.$emit('afterCleanup')
+      await this.emitter.emit('afterCleanup')
     },
     async waitForEvent (evt) {
       const self = this
