@@ -8,11 +8,7 @@
         <div class="col s12">
 
           <div class="input-field col offset-s4 s8 offset-m9 m3" v-if="Object.keys(testIDs).length > 0">
-            <select @change="updateTestID">
-              <option value="" disabled selected>Choose an experiment</option>
-              <option v-for="testID in sortedTestIDs" :value="'' + testID" :key="testID">{{ getTestString(testID) }}</option>
-            </select>
-            <label>Experiment</label>
+            <vue-select ref="testSelect" @change="updateTestID" message="Choose an experiment" label="Experiment" :options="testIDsForSelect"/>
           </div>
 
           <div class="progress-preloader" v-if="loading">
@@ -109,7 +105,7 @@
 <script>
 import { mapGetters, mapActions } from 'vuex'
 import VueMarkdown from 'vue-markdown'
-
+import VueSelect from '@/components/common/select'
 import ExperimentPlot from '@/components/plots/experiment-plot'
 import TemperaturePlot from '@/components/plots/temperature-plot'
 import TemperatureMixin from '@/components/plots/temperature-mixin'
@@ -121,7 +117,8 @@ export default {
   components: {
     TemperaturePlot,
     ExperimentPlot,
-    VueMarkdown
+    VueMarkdown,
+    VueSelect
   },
   mixins: [TemperatureMixin, ThermaboxPlotMixin],
   computed: {
@@ -131,6 +128,17 @@ export default {
       'testIDs',
       'temperaturePlotDefaultOptions'
     ]),
+    testIDsForSelect () {
+      const self = this
+      return this.sortedTestIDs.map(testID => {
+        return {
+          value: testID,
+          get text () {
+            return self.getTestString(testID)
+          }
+        }
+      })
+    },
     plotSize () {
       return this.$el.querySelector('#large-device').style.display === 'none' ? 100 : 200
     },
@@ -167,9 +175,6 @@ export default {
   watch: {
     currentTestID (v) {
       this.loadExperimentResults(this.currentTestID)
-    },
-    testIDs (v) {
-      this.initializeSelect()
     }
   },
   methods: {
@@ -181,14 +186,14 @@ export default {
       const timeStr = startTime.format('YYYY-MM-DD HH:mm:ss')
       return `${testID.substr(0, testID.indexOf('-'))} (${timeStr})`
     },
-    updateTestID (e) {
+    updateTestID (testID) {
       this.currentTestID = undefined
       this.testResult = undefined
       this.testRank = undefined
       this.testInfo = undefined
       this.hasThermaboxData = false
       this.thermaboxData = undefined
-      this.currentTestID = e.target.value
+      this.currentTestID = testID
     },
     loadExperimentResults (experimentID) {
       this.loading = true
@@ -250,10 +255,6 @@ export default {
     updateTestRank (rank) {
       this.testRank = rank
     },
-    initializeSelect () {
-      const selectEl = this.$el.querySelector('select')
-      window.M.FormSelect.init(selectEl)
-    },
     getHumanErrorMessage (err) {
       switch (err.error_code) {
         case 'NOT_ENOUGH_DATA':
@@ -284,7 +285,7 @@ export default {
     var self = this
     this.initPromise.then(() => {
       self.currentTestID = self.currentTestID || self.sortedTestIDs[0]
-      self.initializeSelect()
+      self.$refs.testSelect.update(self.currentTestID)
     })
     window.testResults = this
   }

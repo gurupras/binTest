@@ -46,14 +46,7 @@
 
         <div class="row" v-if="isFake">
           <div class="col offset-s6 offset-m10 s6 m2 input-field">
-            <select id="device-select" @change="changeSimulatedDevice">
-              <option value="" disabled selected>Choose device to emulate</option>
-              <option v-for="device in fakeDevices" :value="'' + device" :key="device"
-                  :class="[deviceID === fakeDevices[device] ? 'selected' : '']">
-                {{ device }}
-              </option>
-            </select>
-            <label>Emulate Device</label>
+            <vue-select ref="emulateSelect" id="device-select" message="Choose device to emulate" :options="fakeDevices" label="Emulate Device" v-model="currentEmulatedDevice"/>
           </div>
         </div>
         <div class="row">
@@ -69,12 +62,14 @@
 <script>
 import { mapGetters } from 'vuex'
 import AppSection from '@/components/app-section'
+import VueSelect from '@/components/common/select'
 import fakeDevices from '@/js/fake-devices'
 
 export default {
   name: 'App',
   components: {
-    AppSection
+    AppSection,
+    VueSelect
   },
   data: function () {
     return {
@@ -130,11 +125,6 @@ export default {
     updateSelectValue (selector, value) {
       const mSelect = window.M.FormSelect.getInstance(this.$el.querySelector(selector))
       mSelect.input.value = value
-    },
-    changeSimulatedDevice (e) {
-      const fakeDevice = e.target.value
-      this.currentEmulatedDevice = fakeDevice
-      this.updateSelectValue('#device-select', e.target.value)
     }
   },
   async beforeMount () {
@@ -164,10 +154,8 @@ export default {
     await this.$store.dispatch('initializeDeviceData')
     this.initialized = true
     this.$nextTick(() => {
-      const selectEl = self.$el.querySelector('#device-select')
-      window.M.FormSelect.init(selectEl)
       if (self.currentEmulatedDevice) {
-        self.updateSelectValue('#device-select', self.currentEmulatedDevice)
+        self.$refs.emulateSelect.update(self.currentEmulatedDevice)
       }
     })
 
