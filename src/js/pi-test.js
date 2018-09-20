@@ -1,8 +1,9 @@
 /* global AndroidAPI */
+import PiWorker from '@/js/workers/pi.worker.js'
 
 function createPiWebWorker () {
-  var worker = new Worker('static/pi.js')
-  return worker
+  // var worker = new Worker('static/pi.js')
+  return new PiWorker()
 }
 
 const TestPhases = Object.freeze({
