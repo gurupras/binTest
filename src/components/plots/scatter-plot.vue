@@ -1,21 +1,29 @@
 <script>
 import { mapGetters } from 'vuex'
-import { Line } from 'vue-chartjs'
+import { Scatter } from 'vue-chartjs'
 // import merge from 'deepmerge'
 // const { reactiveProp } = mixins
 
 export default {
-  name: 'temperature-plot',
-  extends: Line,
+  name: 'scatter-plot',
+  extends: Scatter,
   props: {
-    temperatureData: {
-      type: Object,
+    dataset: {
+      type: Array,
       required: true
     },
     options: {
       type: Object,
       default: function () {
         return this.$store.getters.temperaturePlotDefaultOptions
+      }
+    },
+    datasetOptions: {
+      type: Object,
+      default () {
+        return {
+          useDatasetFromProp: false // If fase, uses datasets[0].data instead
+        }
       }
     },
     beforePlotCallback: {
@@ -42,8 +50,12 @@ export default {
   methods: {
     plot () {
       const data = Object.assign({}, this.temperaturePlotDefaultData)
-      data.labels = this.temperatureData.labels
-      data.datasets[0].data = this.temperatureData.data
+      if (this.datasetOptions.useDatasetFromProp) {
+        data.datasets = this.dataset
+      } else {
+        data.datasets[0].data = this.dataset[0].data
+      }
+
       if (this.beforePlotCallback) {
         this.beforePlotCallback(data)
       }

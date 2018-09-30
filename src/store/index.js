@@ -80,7 +80,10 @@ const getters = {
     const deviceID = state.deviceID
     var manufacturer = deviceID['Build.MANUFACTURER']
     if (manufacturer.toLowerCase() === manufacturer) {
-      manufacturer = manufacturer[0].toUpperCase() + manufacturer.slice(1)
+      try {
+        // This errors when deviceID is completely empty
+        manufacturer = manufacturer[0].toUpperCase() + manufacturer.slice(1)
+      } catch (e) {}
     }
     var deviceName
     if (deviceID.DeviceName) {

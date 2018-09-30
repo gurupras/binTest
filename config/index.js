@@ -17,6 +17,12 @@ module.exports = {
         pathRewrite: {
           '^/api': ''
         }
+      },
+      '/plot': {
+        target: 'http://localhost:10070',
+        pathRewrite: {
+          '^/plot': ''
+        }
       }
     },
 

@@ -7,6 +7,7 @@ import TestDevice from '@/components/test-device'
 import TestResults from '@/components/test-results'
 import SubmissionForm from '@/components/submission-form'
 import SweepTest from '@/components/sweep-test'
+import Comparison from '@/components/comparison'
 
 Vue.use(Router)
 
@@ -46,6 +47,11 @@ export default new Router({
       path: '/crowdsource',
       name: 'crowdsource',
       component: SubmissionForm
+    },
+    {
+      path: '/comparison',
+      name: 'comparison',
+      component: Comparison
     }
   ]
 })

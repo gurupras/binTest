@@ -42,10 +42,10 @@ class MongoDB {
     return result
   }
 
-  async query (query, opts) {
+  async query (...args) {
     const collection = await this.getCollection()
     return new Promise((resolve, reject) => {
-      resolve(collection.find(query, opts))
+      resolve(collection.find(...args))
     })
   }
 

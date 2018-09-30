@@ -16,19 +16,19 @@
     </div>
 
     <p v-if="error">{{ error }}</p>
-    <temperature-plot :height="100" v-if="tempData" :temperature-data="tempData"/>
+    <scatter-plot :height="100" v-if="tempData" :dataset="tempData"/>
   </div>
 </template>
 
 <script>
 import { mapActions } from 'vuex'
 import TemperatureMixin from '@/components/plots/temperature-mixin'
-import TemperaturePlot from '@/components/plots/temperature-plot'
+import ScatterPlot from '@/components/plots/scatter-plot'
 
 export default {
   name: 'temperature-info',
   components: {
-    TemperaturePlot
+    ScatterPlot
   },
   mixins: [TemperatureMixin],
   data: function () {

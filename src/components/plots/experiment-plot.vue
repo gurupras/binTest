@@ -1,6 +1,8 @@
 <script>
 import { mapGetters } from 'vuex'
-import { Line } from 'vue-chartjs'
+import { Scatter } from 'vue-chartjs'
+import TemperatureMixin from '@/components/plots/temperature-mixin'
+import TestResultPlotMixin from '@/components/plots/test-result-plot-mixin'
 import utils from '@/js/utils'
 import is from 'is_js'
 
@@ -9,14 +11,15 @@ import is from 'is_js'
 
 export default {
   name: 'experiment-plot',
-  extends: Line,
+  mixins: [TemperatureMixin, TestResultPlotMixin],
+  extends: Scatter,
   props: {
     experimentData: {
       type: Object,
       required: true
     },
-    temperatureData: {
-      type: Object,
+    temperatureDataset: {
+      type: Array,
       required: true
     }
   },
@@ -35,51 +38,53 @@ export default {
     ...mapGetters([
       'temperaturePlotDefaultOptions',
       'temperaturePlotDefaultData'
-    ]),
+    ])
+  },
+  watch: {
+    chartData: function (v) {
+      this.plot()
+    }
+  },
+  methods: {
     plotData () {
-      var self = this
       const data = JSON.parse(JSON.stringify(this.temperaturePlotDefaultData))
-      const labels = this.temperatureData.labels
 
       const tempDataset = data.datasets[0]
       tempDataset.yAxisID = 'tempData'
-      tempDataset.data = utils.medianFilter(this.temperatureData.data, 9)
+      tempDataset.data = this.temperatureDataset[0].data
       tempDataset.borderWidth = 1.4
 
-      const exptDataPoints = []
-      const exptDataTimestamps = Object.keys(this.processedExperimentData).map((e) => Number(e))
-      labels.forEach((timestamp) => {
-        if (timestamp < exptDataTimestamps[0]) {
-          return exptDataPoints.push(undefined)
-        }
-        const closest = utils.closest(timestamp, exptDataTimestamps)
-        exptDataPoints.push(self.processedExperimentData[closest.value])
-      })
+      const exptTimestamps = Object.keys(this.processedExperimentData).map(x => Number(x))
+      const exptPerformance = exptTimestamps.map(t => this.processedExperimentData[t], this)
+      const filteredExptPerformance = utils.customMedianFilter(exptPerformance, 9)
+      const exptData = exptTimestamps.map((t, idx) => ({x: t, y: filteredExptPerformance[idx]}))
 
       const exptDataset = {
         label: 'Performance',
         yAxisID: 'exptData',
         fill: false,
         lineTension: 0,
-        data: utils.medianFilter(exptDataPoints, 9),
+        showLine: true,
+        spanGaps: true,
+        pointRadius: 0,
+        data: exptData,
         borderWidth: 1.4,
         borderColor: 'rgba(128, 100, 100, 0.6)',
         backgroundColor: 'rgba(128, 100, 100, 0.6)'
       }
 
-      data.labels = labels
-      data.datasets.unshift(exptDataset)
+      data.datasets.push(exptDataset)
       return data
     },
-    plotOptions () {
-      const opts = JSON.parse(JSON.stringify(this.temperaturePlotDefaultOptions))
+    plotOptions (exptData) {
+      const opts = this.getPlotOptions(exptData)
 
       // Fix the temp y axis for dual-y axes
       // Temperature goes on the right
       const tempYAxis = opts.scales.yAxes[0]
       tempYAxis.position = 'left'
       tempYAxis.id = 'tempData'
-      tempYAxis.ticks.stepSize = 20
+      tempYAxis.ticks.stepSize = 20.0
       tempYAxis.ticks.fontcolor = 'rgba(0, 153, 255, 0.9)'
       tempYAxis.scaleLabel.fontColor = 'rgba(0, 153, 255, 0.9)'
 
@@ -100,18 +105,42 @@ export default {
       }
       // Add the exptYAxis in
       opts.scales.yAxes.unshift(exptYAxis)
+
+      // Filter tooltip since performance won't exist everywhere
+      Object.assign(opts.tooltips, {
+        filter ({ xLabel, yLabel, datasetIndex, index, x, y }, data) {
+          const { data: datasetData, yAxisID } = data.datasets[datasetIndex]
+          switch (yAxisID) {
+            case 'tempData':
+              this.ttX = datasetData[index].x // eslint-disable-line vue/no-side-effects-in-computed-properties
+              break
+            case 'exptData':
+            // Find closest performance point. If it's too far, then bail
+              const closestTo = this.ttX
+              if (!closestTo) {
+                console.error('closestTo was undefined')
+              }
+              delete this.ttX
+              const closestPoint = datasetData.reduce((prev, curr) => {
+              // return Math.abs(curr.x - closestTo) <= (Math.abs(prev.x - closestTo) ? curr : prev)
+                const currDistance = Math.abs(curr.x - closestTo)
+                const prevDistance = Math.abs(prev.x - closestTo)
+                return currDistance <= prevDistance ? curr : prev
+              }, datasetData[0])
+              if (Math.abs(closestPoint.x - closestTo) > 2 * 1000) { // Greater than 2 seconds
+                return false
+              }
+              break
+          }
+          return true
+        }
+      })
+
       return opts
-    }
-  },
-  watch: {
-    chartData: function (v) {
-      this.plot()
-    }
-  },
-  methods: {
+    },
     plot () {
-      const plotData = this.plotData
-      const plotOptions = this.plotOptions
+      const plotData = this.plotData(this.experimentData)
+      const plotOptions = this.plotOptions(this.experimentData)
       this.renderChart(plotData, plotOptions)
     },
     processExptData () {
@@ -236,12 +265,12 @@ export default {
     }
   },
   mounted () {
-    var self = this
-    this.addPlugin({
-      id: 'addAnnotations',
-      afterDraw: self.afterDraw
-    })
-    this.processExptData()
+    const self = this
+    // this.addPlugin({
+    //   id: 'addAnnotations',
+    //   afterDraw: self.afterDraw
+    // })
+    self.processExptData()
     window.expt = this
   }
 }

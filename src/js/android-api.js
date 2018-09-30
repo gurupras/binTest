@@ -231,7 +231,15 @@ const AndroidAPI = {
   teardownTestProgress () {},
   getBuildVersion () {
     return 0
-  }
+  },
+  mapClocks () { return '{}' },
+  updateBackgroundCgroupCPUs () {},
+  beforeWarmup () {},
+  afterWarmup () {},
+  beforeCooldown () {},
+  afterCooldown () {},
+  beforeWorkload () {},
+  afterWorkload () {}
 }
 
 export default AndroidAPI

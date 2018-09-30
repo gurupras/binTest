@@ -88,8 +88,16 @@
               <h5>Test Breakdown</h5>
               <div class="row">
                 <div class="col s12 offset-l3 l6">
-                  <experiment-plot :height="plotSize" v-if="testResult" :temperature-data="temperaturePlotData" :experiment-data="experimentData"/>
-                  <temperature-plot :height="100" v-if="thermaboxData" :beforePlotCallback="modifyThermaboxData" :temperature-data="thermaboxData.processed" :options="thermaboxPlotOptions"/>
+                  <experiment-plot :height="plotSize" v-if="testResult" :temperature-dataset="temperaturePlotDataset(testResult)" :experiment-data="experimentData"/>
+                  <scatter-plot :height="plotSize" v-if="voltageData"
+                      :dataset="voltageData.processed"
+                      :options="voltagePlotOptions"
+                      :dataset-options="voltagePlotDatasetOptions"/>
+                  <scatter-plot :height="100" v-if="thermaboxData"
+                      :beforePlotCallback="modifyThermaboxData"
+                      :dataset="thermaboxData.processed"
+                      :options="thermaboxPlotOptions"
+                      :dataset-options="thermaboxPlotDatasetOptions"/>
                 </div>
               </div>
             </div>
@@ -107,20 +115,21 @@ import { mapGetters, mapActions } from 'vuex'
 import VueMarkdown from 'vue-markdown'
 import VueSelect from '@/components/common/select'
 import ExperimentPlot from '@/components/plots/experiment-plot'
-import TemperaturePlot from '@/components/plots/temperature-plot'
+import ScatterPlot from '@/components/plots/scatter-plot'
 import TemperatureMixin from '@/components/plots/temperature-mixin'
 import ThermaboxPlotMixin from '@/components/plots/thermabox-plot-mixin'
+import VoltageMixin from '@/components/plots/voltage-mixin'
 import moment from 'moment'
 
 export default {
   name: 'test-results',
   components: {
-    TemperaturePlot,
+    ScatterPlot,
     ExperimentPlot,
     VueMarkdown,
     VueSelect
   },
-  mixins: [TemperatureMixin, ThermaboxPlotMixin],
+  mixins: [TemperatureMixin, ThermaboxPlotMixin, VoltageMixin],
   computed: {
     ...mapGetters([
       'deviceID',
@@ -141,16 +150,6 @@ export default {
     },
     plotSize () {
       return this.$el.querySelector('#large-device').style.display === 'none' ? 100 : 200
-    },
-    temperaturePlotOptions () {
-      var ret = Object.assign({}, this.temperaturePlotDefaultOptions)
-      ret.scales.xAxes[0].time = {
-        unit: 'minute'
-      }
-      return ret
-    },
-    temperaturePlotData () {
-      return this.fixTemperatureDataForPlot(this.testResult.rawData.temperatureData)
     },
     experimentData () {
       return this.testResult
@@ -191,8 +190,8 @@ export default {
       this.testResult = undefined
       this.testRank = undefined
       this.testInfo = undefined
-      this.hasThermaboxData = false
       this.thermaboxData = undefined
+      this.voltageData = undefined
       this.currentTestID = testID
     },
     loadExperimentResults (experimentID) {
@@ -204,6 +203,7 @@ export default {
         self.updateTestRank(data.rankingData)
         self.testResult = data
         self.loadThermaboxData(data)
+        self.loadVoltageData(data)
       }).catch((err) => {
         self.error = err.message
       }).finally(() => {

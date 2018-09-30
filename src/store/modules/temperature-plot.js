@@ -1,5 +1,6 @@
 const state = {
   temperaturePlotDefaultOptions: {
+    showLine: true,
     elements: {
       point: {
         radius: 0
@@ -34,21 +35,25 @@ const state = {
     }
   },
   temperaturePlotDefaultData: {
-    labels: [],
     datasets: [{
       label: 'Temperature',
       fill: false,
       lineTension: 0,
       data: [],
       borderColor: 'rgba(0, 153, 255, 0.9)',
-      backgroundColor: 'rgba(0, 153, 255, 0.9)'
+      backgroundColor: 'rgba(0, 153, 255, 0.9)',
+      borderWidth: 1.4,
+      showLine: true,
+      spanGaps: true,
+      pointRadius: 0
     }]
   }
 }
 
 const getters = {
   temperaturePlotDefaultData: state => state.temperaturePlotDefaultData,
-  temperaturePlotDefaultOptions: state => state.temperaturePlotDefaultOptions
+  temperaturePlotDefaultOptions: state => state.temperaturePlotDefaultOptions,
+  temperaturePlotDefaultDataset: state => JSON.parse(JSON.stringify(state.temperaturePlotDefaultData)).datasets[0]
 }
 
 export default {

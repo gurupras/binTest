@@ -8,6 +8,8 @@ import random
 import datetime
 import re
 
+from scipy.signal import medfilt
+
 from bokeh.plotting import figure, output_file, show
 from bokeh.layouts import column, gridplot
 from bokeh.resources import CDN
@@ -21,6 +23,7 @@ import tornado.web
 from tornado.httpserver import HTTPServer
 
 from processing import pymongo_helper, ranking_algorithm, parse_trace
+from processing import plot_stacked_frequency, plot_voltage
 
 def setup_parser():
   parser = argparse.ArgumentParser()
@@ -238,7 +241,31 @@ class ParseTraceHandler(tornado.web.RequestHandler):
     result[0].update(first_entry_header)
     self.write(json.dumps(result))
 
+class PlotFrequencyComparisonHandler(tornado.web.RequestHandler):
+  def get(self):
+    experiment_ids = self.get_arguments('experimentIDs[]')
+    results = plot_stacked_frequency.process_experiments(experiment_ids)
+    self.write(results)
 
+class PlotVoltageHandler(tornado.web.RequestHandler):
+  def get(self):
+    experiment_ids = self.get_arguments('experimentIDs[]')
+    results = plot_voltage.process_experiments(experiment_ids)
+    self.write(results)
+class MedianFilterHandler(tornado.web.RequestHandler):
+  def post(self):
+    request = tornado.escape.json_decode(self.request.body)
+    array = request['array']
+    array = [float(x) for x in array]
+    window_size = int(request['windowSize'])
+    filtered = array
+    try:
+      filtered = medfilt(array, window_size).tolist()
+    except Exception, e:
+      print e
+    finally:
+      self.write(json.dumps(filtered))
+      self.set_header('content-type', 'application/json')
 
 def make_app():
   return tornado.web.Application([
@@ -247,6 +274,9 @@ def make_app():
     (r"/experiment-ranking", ExperimentRankingHandler),
     (r"/sanitize-temperatures", SanitizeTemperaturesHandler),
     (r"/parse-trace", ParseTraceHandler),
+    (r"/plot-frequency-comparison", PlotFrequencyComparisonHandler),
+    (r"/plot-voltage", PlotVoltageHandler),
+    (r"/median-filter", MedianFilterHandler)
   ])
 
 def main(argv):

@@ -449,7 +449,7 @@ app.get('/experiment-results', (req, res) => {
   })
 })
 
-app.get('/device-experiment-ids', (req, res) => {
+app.get('/device-experiment-ids', async (req, res) => {
   var deviceID = extractFromQueryAsJSON(req.query.deviceID)
   console.log(`Got request for device-experiment-ids: deviceID=${JSON.stringify(deviceID)}`)
   if (!deviceID['Build.HARDWARE']) {
@@ -463,40 +463,41 @@ app.get('/device-experiment-ids', (req, res) => {
   var mongoDBQuery = generateDeviceQuery(deviceID, {
     type: 'expt-data',
   })
-  mongo.query(mongoDBQuery, {
-    projection: {
-      experimentID: 1,
-      startTime: 1
-    },
-    sort: {
-      $natural: -1
-    }
-  }).then((result) => {
-    result.toArray((err, docs) => {
-      if (err) {
-        console.log(err && err.stack)
-        res.status(500).send(err.message)
-        return
-      }
-      var results = {
-        data: {},
-        order: []
-      }
-      var exptSet = new Set()
-      for (var idx = 0; idx < docs.length; idx++) {
-        var doc = docs[idx]
-        results.data[doc.experimentID] = {
-          experimentID: doc.experimentID,
-          startTime: doc.startTime
-        },
-        exptSet.add(doc.experimentID)
-      }
-      results.order.push(...Array.from(exptSet))
-      console.log(`Found ${results.order.length} experiments for device=${deviceID['Settings.Secure.ANDROID_ID']}`)
-      res.send(JSON.stringify(results))
-    })
+  console.log(`query: ${JSON.stringify(mongoDBQuery)}`)
+  const collection = await mongo.getCollection()
+  const result = await collection.find(mongoDBQuery)
+  .project({
+    experimentID: 1,
+    startTime: 1
   })
+  // We don't sort the data here since the sort with {$natural: -1} seems to take forever
+  // This is probably due to the fact that we dump all the data into 1 collection.
+  // Instead, we retrieve the projected data and then perform the sort ourselves
+  try {
+    const docs = await mongo.getResultAsArray(result)
+    docs.sort((a, b) => b.startTime - a.startTime)
+    var results = {
+      data: {},
+      order: []
+    }
+    var exptSet = new Set()
+    for (var idx = 0; idx < docs.length; idx++) {
+      var doc = docs[idx]
+      results.data[doc.experimentID] = {
+        experimentID: doc.experimentID,
+        startTime: doc.startTime
+      },
+      exptSet.add(doc.experimentID)
+    }
+    results.order.push(...Array.from(exptSet))
+    console.log(`Found ${results.order.length} experiments for device=${deviceID['Settings.Secure.ANDROID_ID']}`)
+    res.send(JSON.stringify(results))
+  } catch (err) {
+    console.log(err && err.stack)
+    return res.status(500).send(err.message)
+  }
 })
+
 app.get('/device-rank', function (req, res) {
   const deviceID = extractFromQueryAsJSON(req.query.deviceID)
   const model = deviceID['BUILD.MODEL']
