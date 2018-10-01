@@ -28,11 +28,11 @@ class MongoDB {
     this.database = database
   }
 
-  async insertDocument (doc, { sanitize = true, multi = false }) {
+  async insertDocument (doc, collectionName, { sanitize = true, multi = false }) {
     if (sanitize) {
       doc = sanitizeDoc(doc)
     }
-    const collection = await this.getCollection()
+    const collection = await this.getCollection(collectionName)
     var result
     if (multi) {
       result = await collection.insertMany(doc)
@@ -64,9 +64,9 @@ class MongoDB {
     await this.db.close()
   }
 
-  async getCollection () {
+  async getCollection (collection = 'results') {
     await this.connect()
-    return this.db.collection('results')
+    return this.db.collection(collection)
   }
 
   async connect () {
