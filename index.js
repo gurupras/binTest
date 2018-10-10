@@ -275,6 +275,7 @@ async function upload (json) {
     return
   }
 
+  var collection = 'results'
   const insertOptions = {}
 
   switch (json.type) {
@@ -284,6 +285,7 @@ async function upload (json) {
     case 'tracing-data':
       // Incoming data is all essentially strings.
       // Process this data with python
+      collection = 'tracing'
       json = JSON.parse(await post({
         url: 'http://localhost:10070/parse-trace',
         body: JSON.stringify(json),
@@ -294,9 +296,12 @@ async function upload (json) {
       insertOptions.sanitize = false
       insertOptions.multi = true
       break
+    case 'thermabox-data':
+      collection = 'thermabox'
+      break
   }
   // TODO: Check for fields
-  return mongo.insertDocument(json, insertOptions)
+  return mongo.insertDocument(json, collection, insertOptions)
 }
 
 app.post('/upload', async (req, res) => {
@@ -588,7 +593,8 @@ app.get('/thermabox/query', async (req, res) => {
       $lt: end
     }
   }
-  const result = await mongo.query(mongoDBQuery)
+  const collection = await mongo.getCollection('thermabox')
+  const result = await collection.find(mongoDBQuery)
   try {
     const docs = await mongo.getResultAsArray(result.sort({$natural: 1}))
     const data = docs.map(doc => ({state: doc.state, timestamp: doc.timestamp, temperature: doc.temperature}))
