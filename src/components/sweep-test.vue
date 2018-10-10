@@ -99,7 +99,7 @@ export default {
         if (self.label) {
           testResult.label = self.label
         }
-        testResult.testType = 'sweep-test-ispass-v1'
+        testResult.testType = 'sweep-test-ispass-v2'
 
         const limits = await thermabox.getLimits()
         const response = await axios.get('/api/thermabox/query', {
