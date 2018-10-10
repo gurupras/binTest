@@ -199,6 +199,8 @@ export default {
     this.$on('thermabox-stable', this.runTest)
     window.thermabox = thermabox
 
+    AndroidAPI.acquireWakeLock()
+
     console.log(`Target ambient temperature: ${this.currentAmbientTemperature}`)
     console.log('Attempting to check thermabox limits & stability')
 
