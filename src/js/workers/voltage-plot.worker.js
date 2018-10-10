@@ -30,6 +30,11 @@ async function processVoltageData ({ exptData, defaultDataset }) {
     }
     const voltages = await utils.medianFilter(finalEntries.map(entry => entry.new), 51)
     dataset.data = finalEntries.map((entry, idx) => ({x: entry.datetime, y: voltages[idx]}))
+    // Extend the last entry until the end of temperatureData's timestamps
+    dataset.data.push({
+      x: temperatureData.timestamps.slice(-1)[0],
+      y: voltages.slice(-1)[0]
+    })
     datasets.push(dataset)
   }
   const processedVoltageData = {
